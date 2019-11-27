@@ -1,0 +1,56 @@
+import {Component} from '@angular/core';
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+
+
+class JokeComponent {}
+
+//annotation
+@Component({
+    selector : 'joke',
+    template :`<h1> what did the</h1>`
+})
+
+<body>
+<joke></joke>
+</body>
+
+
+@NgModule ({
+    imports : [BrowserModule],
+    delarations : [JokeComponent],
+    bootstrap : [JokeComponent]
+
+})
+
+export class AppModule{}
+
+FormsModule
+RouterModule
+HttpModule
+
+platformBrowserDynamic().bootstrapModule(AppModule);
+
+
+export module a {
+    export class b {
+    }
+
+    export module b {
+        export enum c {
+            C1 = 1,
+            C2 = 2,
+            C3 = 3,
+        }
+    }
+}
+
+//Example 3
+class A {
+    static B = class { }
+}
+
+var a = new A();
+
+var b = new A.B();
