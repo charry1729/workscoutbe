@@ -18,7 +18,11 @@ var userSchema = new Schema({
   },
   userType: {
     type: String
-  }
+  },
+  name:{
+    type: String,
+    required: true,
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);

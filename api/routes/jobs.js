@@ -62,7 +62,7 @@ router.get("/", (req, res, next) => {
                             createdBy: docs.createdBy,
                             activeStatus: docs.activeStatus,
                             primaryResponsibilities: docs.primaryResponsibilities,
-                            Requirements: docs.Requirements,
+                            requirements: docs.requirements,
                             description: docs.description,
                             location: docs.location,
                             jobType: docs.jobType,
@@ -113,11 +113,11 @@ router.post("/", checkAuth, (req, res, next) => {
         //        jobId: docs._id,
         name: req.body.name,
         title: req.body.title,
-        //       createdAt: Date(),
+        createdAt:new Date(),
         createdBy: req.body.createdBy,
         activeStatus: req.body.activeStatus,
         primaryResponsibilities: req.body.primaryResponsibilities,
-        Requirements: req.body.Requirements,
+        requirements: req.body.requirements,
         description: req.body.description,
         location: req.body.location,
         jobType: req.body.jobType,
@@ -134,8 +134,7 @@ router.post("/", checkAuth, (req, res, next) => {
         // price: req.body.price,
         // productImage: req.file.path
     });
-    job
-        .save()
+    job.save()
         .then(result => {
             console.log(result);
             res.status(200).json({
@@ -151,7 +150,7 @@ router.post("/", checkAuth, (req, res, next) => {
                     createdBy: result.createdBy,
                     activeStatus: true, //result.activeStatus,
                     primaryResponsibilities: result.primaryResponsibilities,
-                    Requirements: result.Requirements,
+                    requirements: result.requirements,
                     description: result.description,
                     location: result.location,
                     jobType: result.jobType,
@@ -187,9 +186,9 @@ router.get("/:_id", async (req, res, next) => {
     //  console.log(ID);
     //   const job1 = await Job.findById(req.params.jobId)
     Job.findById(req.params._id)
-        .populate("profile")
-        .exec()
-        .limit(5)
+        // .populate("profile")
+        // .exec()
+        // .limit(5)
         // .sort({
         //     age: -1
         // });

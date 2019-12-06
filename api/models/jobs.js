@@ -16,6 +16,9 @@ const jobSchema = mongoose.Schema({
     createdAt: {
         type: Date
     },
+    closeDate:{
+        type: String
+    },
     createdBy: {
         //type: String
 

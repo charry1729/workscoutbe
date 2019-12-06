@@ -17,6 +17,11 @@ const profileSchema = mongoose.Schema({
     category: {
         type: String
     },
+    user_id:{
+        type:String,
+        required:true,
+        unique: true,
+    },
     //  category: {
     //     type: Schema.Types.ObjectId,
     //     ref: 'User'
@@ -40,7 +45,7 @@ const profileSchema = mongoose.Schema({
         type: String
     },
     phoneNumber: {
-        type: Number
+        type: String
     },
     salary: {
         type: Number

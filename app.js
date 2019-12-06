@@ -14,7 +14,7 @@ mongoose.connect(
     'mongodb+srv://apps:' +
     process.env.MONGO_ATLAS_PW +
     '@node-practise-avqsi.mongodb.net/', {
-        dbName: 'testdb'
+        dbName: 'testdb1'
     }
 );
 

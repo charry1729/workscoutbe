@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const checkAuth = require("../middleware/check-auth");
 
 const User = require('../models/users');
 
@@ -26,13 +27,15 @@ router.post('/signup', (req, res, next) => {
                         const user = new User({
                             _id: new mongoose.Types.ObjectId(),
                             email: req.body.email,
-                            password: hash
+                            password: hash,
+                            name: req.body.username,
+                            userType: req.body.type,
                         });
                         user.save()
                             .then(result => {
                                 console.log(result);
                                 res.status(201).json({
-                                    message: 'User Created'
+                                    message: 'User Created',
                                 });
                             })
                             .catch(err => {
@@ -48,6 +51,56 @@ router.post('/signup', (req, res, next) => {
         });
 
 });
+
+router.post('/changePassword', checkAuth,(req, res, next) => {
+    User.find({
+            _id: req.body._id
+        })
+        .exec()
+        .then(user => {
+            
+                bcrypt.compare(req.body.password, user[0].password, (err, result) => {
+                    if (err) {
+                        res.status(500).json({
+                            error: err,
+                            message: "Old password was given wrong",
+                        });
+                    } 
+                    if(result){
+                        if(req.body.new_password){
+
+                        }
+                    }
+                    
+                    // else {
+                    //     const user = new User({
+                    //         _id: new mongoose.Types.ObjectId(),
+                    //         email: req.body.email,
+                    //         password: hash,
+                    //         name: req.body.username,
+                    //         userType: req.body.type,
+                    //     });
+                    //     user.save()
+                    //         .then(result => {
+                    //             console.log(result);
+                    //             res.status(201).json({
+                    //                 message: 'User Created',
+                    //             });
+                    //         })
+                    //         .catch(err => {
+                    //             res.status(500).json({
+                    //                 error: err
+                    //             });
+                    //         });
+                    // }
+                });
+
+
+            
+        });
+
+});
+
 
 router.post('/login', (req, res, next) => {
     User.find({
@@ -79,7 +132,10 @@ router.post('/login', (req, res, next) => {
                         message: "Auth Successful",
                         token: token,
                         userId: user[0]._id,
-                        result: result
+                        result: result,
+                        name: user[0].name,
+                        email:user[0].email,
+                        type: user[0].userType,
                     });
                 }
                 res.status(401).json({
