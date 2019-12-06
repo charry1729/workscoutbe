@@ -1,13 +1,59 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require('mongoose');
+const checkAuth = require('../middleware/check-auth');
 
 //const Job = require('../models/jobs');
 const Profile = require('../models/profile');
 const User = require('../models/users');
 
+const multer = require("multer");
 
-router.post('/', (req, res, next) => {
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "./uploads/");
+    },
+    filename: function (req, file, cb) {
+        cb(null, new Date().toISOString() + file.originalname);
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    //    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+    if (
+        file.mimetype === "application/doc" ||
+        file.mimetype === "application/docx" ||
+        file.mimetype === "application/pdf"
+    ) {
+        cb(null, true); //accept a file
+    } else {
+        cb(
+            new Error({
+                message: "File Type is not accepted"
+            }),
+            false
+        ); //reject a file
+    }
+};
+
+const uploads = multer({
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
+});
+// const uploads = multer({
+//     dest: 'uploads/'
+// })
+//checkAuth
+// router.post('/', uploads.single('resume'), (req, res, next) => {
+//     console.log("++++++++++");
+//     console.log("body : ", req.body);
+//     console.log("++++++++++");
+
+router.post('/',uploads.single('resume'), (req, res, next) => {
     Profile.find({user_id : req.body.userid})
         .then(profile => {
             if(profile) {
@@ -172,9 +218,29 @@ router.get('/:userid', (req, res, next) => {
 // });
 
 router.patch('/:_id', (req, res, next) => {
-    res.status(200).json({
-        message: 'Profile Updated'
-    });
+    console.log(req.body);
+
+    const ID = req.params._id;
+    const updateOps = {};
+    for (const ops of req.body) {
+        updateOps[ops.propName] = ops.value;
+    }
+    Profile.update({
+            _id: ID
+        }, {
+            $set: updateOps
+        })
+        .exec()
+        .then(result => {
+            console.log(result);
+            res.status(200).json(result);
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({
+                error: err
+            });
+        });
 });
 
 
