@@ -6,6 +6,15 @@ const jwt = require('jsonwebtoken');
 const checkAuth = require("../middleware/check-auth");
 
 const User = require('../models/users');
+const Profile = require("../models/profile")
+
+router.get("/all",(req,res,next)=>{
+    User.find().then((data)=>{
+        res.status(200).json({
+            users : data,
+        })
+    })
+})
 
 router.post('/signup', (req, res, next) => {
     User.find({
@@ -33,10 +42,25 @@ router.post('/signup', (req, res, next) => {
                         });
                         user.save()
                             .then(result => {
+
                                 console.log(result);
-                                res.status(201).json({
-                                    message: 'User Created',
+                                const profile = new Profile({
+                                    _id : new mongoose.Types.ObjectId(),
+                                    user_id: result._id,
                                 });
+                                profile.save()
+                                        .then(result =>{
+                                            console.log(result);
+                                            res.status(201).json({
+                                                message: 'User Created',
+                                            });
+                                        })
+                                        .catch(err=>{
+                                            res.status(500).json({
+                                                error : err,
+                                            })
+                                        })
+                                
                             })
                             .catch(err => {
                                 res.status(500).json({
@@ -53,13 +77,13 @@ router.post('/signup', (req, res, next) => {
 });
 
 router.post('/changePassword', checkAuth,(req, res, next) => {
-    User.find({
+    User.findOne({
             _id: req.body._id
         })
         .exec()
         .then(user => {
             
-                bcrypt.compare(req.body.password, user[0].password, (err, result) => {
+                bcrypt.compare(req.body.password, user.password, (err, result) => {
                     if (err) {
                         res.status(500).json({
                             error: err,
@@ -135,11 +159,11 @@ router.post('/login', (req, res, next) => {
                     return res.status(200).json({
                         message: "Auth Successful",
                         token: token,
-                        userId: user[0]._id,
+                        userId: user._id,
                         result: result,
-                        name: user[0].name,
-                        email:user[0].email,
-                        type: user[0].userType,
+                        name: user.name,
+                        email:user.email,
+                        type: user.userType,
                     });
                 }
                 res.status(401).json({

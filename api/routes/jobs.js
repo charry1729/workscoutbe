@@ -1,9 +1,19 @@
 const express = require("express");
+var cors = require('cors');
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
 const checkAuth = require("../middleware/check-auth");
 const Job = require("../models/jobs");
+const Profile = require("../models/profile")
+const User = require("../models/users")
+const JobApplication = require("../models/jobApplications")
+router.all('*', cors());
+const fs = require('fs')
+const { promisify } = require('util')
+
+const unlinkAsync = promisify(fs.unlink)
+
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -41,8 +51,21 @@ const uploads = multer({
 });
 //const uploads = multer({dest : 'uploads/'})
 
+router.get("/all",(req,res,next)=>{
+    Job.find().populate('applicants').then((data)=>{
+        console.log(data);
+        res.status(200).json({
+            jobs: data,
+        })
+    })
+    // res.status(200).json({
+    //     message:"done",
+    // })
+});
+
 router.get("/", (req, res, next) => {
     Job.find()
+        // .populate(applicants)
         .sort({
             createdAt: -1
         })
@@ -103,6 +126,7 @@ router.post("/", checkAuth, (req, res, next) => {
     //     name : req.body.name,
     //     price : req.body.price
     // };
+    // res.header("Access-Control-Allow-Origin", "*");
     console.log(req.body);
 
     console.log("----");
@@ -129,7 +153,8 @@ router.post("/", checkAuth, (req, res, next) => {
         companyDetails: req.body.companyDetails,
         companyName: req.body.companyName,
         Website: req.body.Website,
-        companyDescription: req.body.companyDescription
+        companyDescription: req.body.companyDescription,
+        closeDate: req.body.closeDate,
         // name: req.body.name,
         // price: req.body.price,
         // productImage: req.file.path
@@ -181,10 +206,180 @@ router.post("/", checkAuth, (req, res, next) => {
         });
 });
 
+
+router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
+    // console.log(req);
+    // console.log(req.userData);
+    // let user;
+    // console.log(req.body);
+    const file = req.file;
+
+    if(! req.body.jobId){
+        res.status(404).json({
+            message:"JobId is not present",
+        })
+        return
+    }
+    // var jobFound ;
+    const dat = req.body;
+    if(! dat.applicantName && dat.applicantEmail){
+        res.status(500).json({
+            message:'Data is missing',
+        })
+        return;
+    }
+
+    var new_jobApplication ;
+
+    Job.findById(req.body.jobId)
+    .then(job=>{
+        Profile.findById(req.body.applicantProfile)
+        .then(profile=>{
+            JobApplication.findOne({'applicantProfile':req.body.applicantProfile,'jobId':req.body.jobId})
+            .then(found=>{
+                console.log(found);
+                if(found){
+                    console.log(req.file.path);
+                    
+                    unlinkAsync(req.file.path);
+                    res.status(200).json({
+                        message:"Already Applied",
+                    })
+                }else{
+                    new_jobApplication = new JobApplication({
+                                    _id: new mongoose.Types.ObjectId(),
+                                    applicantName:req.body.applicantName,
+                                    applicantEmail:req.body.applicantEmail,
+                                    applicantMessage:req.body.applicantMessage,
+                                    resume : file ? file.path : profile.resume,
+                                    applicantProfile:profile,
+                                    jobId:job,
+                                });
+                                new_jobApplication.save()
+                                                    .then(jobapp=>{
+                                                        console.log("JOb app is \n");
+                                                        console.log(jobapp);
+                                                        return Profile.findOneAndUpdate({
+                                                            '_id':req.body.applicantProfile
+                                                        },{
+                                                            '$addToSet':{
+                                                                jobsApplied: jobapp,
+                                                            }
+                                                        }).then((prof)=>{
+                                                            console.log("Profile");
+                                                            console.log(prof);
+                                                            return Job.findOneAndUpdate(
+                                                            {
+                                                                '_id':req.body.jobId
+                                                            },
+                                                            {
+                                                                '$addToSet':{
+                                                                    applicants:jobapp,
+                                                                }
+                                                            }).then((jb)=>{
+                                                                console.log(jb);
+                                                            })
+                                                        })
+                                                    })
+                                                    .then(()=>{
+                                                        res.status(200).json({
+                                                            message:"Job applied",
+                                                        })
+                                                    })
+                                                    .catch(err=>{
+                                                        res.status(500).json({
+                                                            message:'Error while applying',
+                                                            error : err,
+                                                        })
+                                                    })
+
+                }
+                
+            }).catch(err=>{
+                res.status(500).json({
+                    message:"error occured",
+                })
+            })
+        })
+    })
+
+
+    // Job.findById(req.body.jobId)
+    // .then(()=>{
+
+    //     User.findOne({
+    //         email: req.userData.email,
+    //     }).then(usr=>{
+    //         // user = usr;
+    //         // console.log("here");
+    //         // console.log(usr);
+    //         Profile.findOne({
+    //             user_id : usr._id,
+    //         }).then(profile=>{
+    //             // console.log(profile);
+    //             return Job.findOneAndUpdate(
+    //                 {
+    //                     '_id':req.body.jobId
+    //                 },
+    //                 {
+    //                     '$addToSet':{
+    //                         applicants:profile,
+    //                     }
+    //                 })
+                
+    //         }).then(()=>{
+    //             return Job.findById(req.body.jobId)
+    //                 .then(job=>{
+    //                     return Profile.findOneAndUpdate(
+    //                         {
+    //                             user_id: usr._id,
+    //                         },
+    //                         {
+    //                             '$addToSet':{
+    //                                 jobsApplied:job,
+    //                             }
+    //                         }
+    //                     )
+    //                 })
+    //                 .catch(err=>{
+    //                     res.status(404).json({
+    //                         message:"JobId Not found",
+    //                     })
+    //                     // return
+    //                 })
+    //         }).then(()=>{
+    //             // console.log("Last always");
+    //             res.status(200).json({
+    //                 message:"Job applied successfully"
+    //             })
+    //         })
+    //         .catch(err=>{
+    //             res.status(404).json({
+    //                 message : "Profile is not found"
+    //             })
+    //         })
+
+            
+    //     }).catch(err=>{
+    //         res.status(500).json({
+    //             message:"User not Found",
+    //         })
+    //     })
+
+    // })
+    // .catch(err=>{
+    //     res.status(404).json({
+    //         message:"Job Not found",
+    //     })
+    //     // return;
+    // })
+    
+
+});
+
+
 router.get("/:_id", async (req, res, next) => {
-    //   const ID = req.params.jobId;
-    //  console.log(ID);
-    //   const job1 = await Job.findById(req.params.jobId)
+
     Job.findById(req.params._id)
         // .populate("profile")
         // .exec()

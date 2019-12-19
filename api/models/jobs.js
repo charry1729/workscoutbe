@@ -21,7 +21,6 @@ const jobSchema = mongoose.Schema({
     },
     createdBy: {
         //type: String
-
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
@@ -70,7 +69,8 @@ const jobSchema = mongoose.Schema({
     },
     companyDescription: {
         type: String
-    }
+    },
+    applicants:[{type:mongoose.Schema.Types.ObjectId, ref: 'JobAppSchema'}],
 
 
 });

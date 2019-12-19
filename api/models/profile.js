@@ -52,7 +52,8 @@ const profileSchema = mongoose.Schema({
     },
     companyName: {
         type: String
-    }
+    },
+    jobsApplied:[{type:mongoose.Schema.Types.ObjectId, ref: 'JobAppSchema'}]
 
 });
 

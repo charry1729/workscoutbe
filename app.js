@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const cors = require('cors');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -10,11 +11,17 @@ const jobRoutes = require('./api/routes/jobs');
 // const orderRoutes = require('./api/routes/orders');
 const userRoutes = require('./api/routes/users');
 
+// router.all('*', cors());
+app.use(cors());
+
+
+// testdb2 for test and prod for production 
+
 mongoose.connect(
     'mongodb+srv://apps:' +
     process.env.MONGO_ATLAS_PW +
     '@node-practise-avqsi.mongodb.net/', {
-        dbName: 'testdb1'
+        dbName: 'prod'
     }
 );
 

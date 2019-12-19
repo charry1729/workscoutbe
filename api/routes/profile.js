@@ -54,9 +54,14 @@ const uploads = multer({
 //     console.log("++++++++++");
 
 router.post('/',uploads.single('resume'), (req, res, next) => {
+    const file = req.file
+
     Profile.find({user_id : req.body.userid})
         .then(profile => {
-            if(profile) {
+            if(profile.length!=0) {
+                // console.log(profile);
+                // console.log((req.body.fullName || profile.fullName))
+                // return;
                 return Profile.findOneAndUpdate(
                     {
                         user_id: req.body.userid
@@ -64,20 +69,20 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     {
                         $set: {
                             // _id: new mongoose.Types.ObjectId(),
-                            fullName: req.body.fullName,
-                            email: req.body.email,
-                            region: req.body.region,
-                            professionalTitle: req.body.professionalTitle,
-                            category: req.body.category,
-                            skills: req.body.skills,
-                            url: req.body.url,
-                            experience: req.body.experience,
-                            resume: req.body.resume, //upload file 
-                            aboutMe: req.body.aboutMe,
-                            education: req.body.education,
-                            phoneNumber: req.body.phoneNumber,
-                            salary: req.body.salary,
-                            companyName: req.body.companyName,
+                            fullName: req.body.fullName ? req.body.fullName : profile[0].fullName,
+                            email: req.body.email ? req.body.email : profile[0].email,
+                            region: req.body.region ? req.body.region : profile[0].region,
+                            professionalTitle: req.body.professionalTitle ? req.body.professionalTitle : profile[0].professionalTitle,
+                            category: req.body.category ? req.body.category : profile[0].category,
+                            skills: req.body.skills ? req.body.skills : profile[0].skills,
+                            url:  req.body.url ? req.body.url : profile[0].url,
+                            experience: req.body.experience ? req.body.experience : profile[0].experience,
+                            resume: file ? file.path : profile[0].resume, //upload file 
+                            aboutMe: req.body.aboutMe ? req.body.aboutMe : profile[0].aboutMe,
+                            education: req.body.education ? req.body.education : profile[0].education,
+                            phoneNumber:  req.body.phoneNumber ? req.body.phoneNumber : profile[0].phoneNumber,
+                            salary: req.body.salary ? req.body.salary : profile.salary,
+                            companyName: req.body.companyName ? req.body.companyName : profile[0].companyName,
                             }
                     },
                     function (err, doc) {
@@ -86,6 +91,7 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                             return err;
                         } else {
                             console.log("update document success");
+                            console.log(doc);
                             return doc;
                         }
 
@@ -107,7 +113,7 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     skills: req.body.skills,
                     url: req.body.url,
                     experience: req.body.experience,
-                    resume: req.body.resume, //upload file 
+                    resume: file ? file.path : null, //upload file 
                     aboutMe: req.body.aboutMe,
                     education: req.body.education,
                     phoneNumber: req.body.phoneNumber,
@@ -160,10 +166,23 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
 
 
 });
-
+router.get("/:userid/all",(req,res,next)=>{
+    Profile.findOne({user_id:req.params.userid})
+    // .populate('jobsApplied')
+    .then((data)=>{
+        console.log(data);
+        res.status(200).json({
+            profile: data,
+        })
+    })
+    // res.status(200).json({
+    //     message:"done",
+    // })
+});
 
 router.get('/:userid', (req, res, next) => {
  Profile.findOne({user_id:req.params.userid})
+        .populate('jobsApplied','jobId')
         .then(result=>{
             res.status(201).json({
                 data: {
@@ -182,8 +201,8 @@ router.get('/:userid', (req, res, next) => {
                     education: result.education,
                     phoneNumber: result.phoneNumber,
                     salary: result.salary,
-                    companyName: result.companyName
-
+                    companyName: result.companyName,
+                    jobsApplied: result.jobsApplied,
                 },
                 request: {
                     type: 'GET',
