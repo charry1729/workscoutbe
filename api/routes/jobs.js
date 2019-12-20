@@ -15,6 +15,9 @@ const { promisify } = require('util')
 const unlinkAsync = promisify(fs.unlink)
 
 
+const SERVER_IP = "3.229.152.95:3001";
+// const SERVER_IP = "localhost:3001";
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "./uploads/");
@@ -100,7 +103,7 @@ router.get("/", (req, res, next) => {
                             companyDescription: docs.companyDescription,
                             request: {
                                 type: "GET",
-                                url: "http://localhost:3000/job/" + docs._id
+                                url: "http://"+SERVER_IP+"/job/" + docs._id
                             }
                         };
                     })
@@ -193,7 +196,7 @@ router.post("/", checkAuth, (req, res, next) => {
                     // ID: result._id,
                     request: {
                         type: "GET",
-                        url: "http://localhost:3000/job/" + result._id
+                        url: "http://"+SERVER_IP+"/job/" + result._id
                     }
                 }
             });
@@ -240,7 +243,7 @@ router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
                 console.log(found);
                 if(found){
                     console.log(req.file.path);
-                    
+
                     unlinkAsync(req.file.path);
                     res.status(200).json({
                         message:"Already Applied",
@@ -395,7 +398,7 @@ router.get("/:_id", async (req, res, next) => {
                     request: {
                         type: "GET",
                         description: "Get All Jobs",
-                        url: "http://localhost:3000/job/" + doc._id
+                        url: "http://"+SERVER_IP+"/job/" + doc._id
                     }
                 });
             } else {
@@ -426,7 +429,7 @@ router.get("/:_id", async (req, res, next) => {
     //                 request: {
     //                     type: 'GET',
     //                     description: 'Get All Jobs',
-    //                     url: 'http://localhost:3000/job'
+    //                     url: 'http://"+SERVER_IP+"/job'
     //                 }
     //             });
 
@@ -489,7 +492,7 @@ router.get("/createdBy/:createdBy", async (req, res, next) => {
                     request: {
                         type: "GET",
                         description: "Get All Jobs",
-                        url: "http://localhost:3000/job/" + req.params.createdBy
+                        url: "http://"+SERVER_IP+"/job/" + req.params.createdBy
                     }
                 });
             } else {

@@ -9,6 +9,10 @@ const User = require('../models/users');
 
 const multer = require("multer");
 
+const SERVER_IP = "3.229.152.95:3001";
+// const SERVER_IP = "localhost:3001";
+
+
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -153,7 +157,7 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                 },
                 request: {
                     type: 'GET',
-                    url: 'http://localhost:3000/profile/' + result._id
+                    url: 'http://'+SERVER_IP+'/profile/' + result._id
                 }
             });
         })
@@ -169,6 +173,8 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
 router.get("/:userid/all",(req,res,next)=>{
     Profile.findOne({user_id:req.params.userid})
     // .populate('jobsApplied')
+        // .populate('jobsApplied','jobId')
+
     .then((data)=>{
         console.log(data);
         res.status(200).json({
@@ -206,7 +212,7 @@ router.get('/:userid', (req, res, next) => {
                 },
                 request: {
                     type: 'GET',
-                    url: 'http://localhost:3000/profile/' + result._id
+                    url: 'http://'+SERVER_IP+'/profile/' + result._id
                 }
             });
         })
@@ -312,7 +318,7 @@ module.exports = router;
 //                 },
 //                 request: {
 //                     type: 'GET',
-//                     url: 'http://localhost:3000/orders/' + result._id
+//                     url: 'http://'+SERVER_IP+'/orders/' + result._id
 //                 }
 //             });
 //         })
