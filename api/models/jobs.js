@@ -22,7 +22,8 @@ const jobSchema = mongoose.Schema({
     createdBy: {
         //type: String
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: true
     },
     activeStatus: {
         type: String

@@ -9,8 +9,8 @@ const User = require('../models/users');
 
 const multer = require("multer");
 
-const SERVER_IP = "3.229.152.95:3001";
-// const SERVER_IP = "localhost:3001";
+// const SERVER_IP = "3.229.152.95:3001";
+const SERVER_IP = "localhost:3001";
 
 
 
@@ -28,7 +28,9 @@ const fileFilter = (req, file, cb) => {
     if (
         file.mimetype === "application/doc" ||
         file.mimetype === "application/docx" ||
-        file.mimetype === "application/pdf"
+        file.mimetype === "application/pdf" ||
+        file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        file.mimetype === "application/msword"
     ) {
         cb(null, true); //accept a file
     } else {
@@ -59,7 +61,7 @@ const uploads = multer({
 
 router.post('/',uploads.single('resume'), (req, res, next) => {
     const file = req.file
-
+    console.log(req.body);
     Profile.find({user_id : req.body.userid})
         .then(profile => {
             if(profile.length!=0) {

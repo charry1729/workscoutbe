@@ -15,8 +15,8 @@ const { promisify } = require('util')
 const unlinkAsync = promisify(fs.unlink)
 
 
-const SERVER_IP = "3.229.152.95:3001";
-// const SERVER_IP = "localhost:3001";
+// const SERVER_IP = "3.229.152.95:3001";
+const SERVER_IP = "localhost:3001";
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -158,6 +158,7 @@ router.post("/", checkAuth, (req, res, next) => {
         Website: req.body.Website,
         companyDescription: req.body.companyDescription,
         closeDate: req.body.closeDate,
+        // createdBy: req.body.createdBy,
         // name: req.body.name,
         // price: req.body.price,
         // productImage: req.file.path
@@ -590,6 +591,61 @@ router.post("/searchResult", async (req, res, next) => {
         });
 });
 
+
+
+router.post("/applications", checkAuth,(req,res,next)=>{
+    console.log("In applications");
+    console.log(req.userData);
+    User.findOne({
+        email: req.userData.email,
+    }).then(user=>{
+        console.log(user);
+        if(user.userType == 'applicant'){
+            console.log("Not allowed to view")
+        }else{
+            return Job.findOne({
+                _id : req.body.jobId,
+            }).populate('applicants')
+            .then(job=>{
+                console.log("job is");
+                console.log(job['createdBy']);
+                console.log(user._id);
+                console.log(typeof(job['createdBy']));
+                console.log(typeof(user._id));
+
+                if(String(job['createdBy']) == String(user._id)){
+                    let data=[];
+                    for(let i=0;i<job["applicants"].length;i++){
+                        data[i] = {};
+                        if(job['applicants'][i]['purchased']){
+                            data[i]['resume'] = job['applicants'][i]['resume'];
+                        }
+                        data[i]['purchased'] = job['applicants'][i]['purchased'];
+                        data[i]['applicationStatus'] = job['applicants'][i]['applicationStatus'];
+                        data[i]['rating'] = job['applicants'][i]['rating'];
+                        data[i]['note'] = job['applicants'][i]['note'];
+                        data[i]['applicantName'] = job['applicants'][i]['applicantName'];
+                        data[i]['applicantEmail'] = job['applicants'][i]['applicantEmail'];
+                        data[i]['applicantMessage'] = job['applicants'][i]['applicantMessage'];
+                    }
+                    res.status(200).json({
+                        applicants:data,
+                    })
+                }else{
+                    res.status(401).json({
+                        message:"Not allowed to view this job applicants",
+                    })
+                }
+            })
+        }
+    })
+    .catch(err=>{
+        res.status(500).json({
+            error : "Error while fetching applications",
+        })
+    })
+    
+});
 
 
 module.exports = router;

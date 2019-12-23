@@ -80,10 +80,10 @@ router.post('/changePassword', checkAuth,(req, res, next) => {
     User.findOne({
             _id: req.body._id
         })
-        .exec()
+        // .exec()
         .then(user => {
             
-                bcrypt.compare(req.body.password, user.password, (err, result) => {
+                bcrypt.compare(req.body.old_password, user.password, (err, result) => {
                     if (err) {
                         res.status(500).json({
                             error: err,
@@ -92,7 +92,9 @@ router.post('/changePassword', checkAuth,(req, res, next) => {
                     } 
                     if(result){
                         if(req.body.new_password){
-
+                            
+                        }else{
+                            
                         }
                     }
                     
