@@ -10,6 +10,9 @@ const jobapplicationschema = mongoose.Schema({
     resume:{
         type:String,
     },
+    appliedOn:{
+        type:Date
+    },
 
     applicationStatus:{
         type:String,

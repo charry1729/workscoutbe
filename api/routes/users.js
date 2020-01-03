@@ -76,6 +76,21 @@ router.post('/signup', (req, res, next) => {
 
 });
 
+router.get("/addResumes/:id",(req,res,next)=>{
+
+    User.findOneAndUpdate({
+        _id:req.params.id,
+    },{
+        $set:{
+            resumedownloadlimit:10,
+        }
+    }).then(usr=>{
+        res.status(200).json({
+            message:"done"
+        })
+    })
+})
+
 router.post('/changePassword', checkAuth,(req, res, next) => {
     User.findOne({
             _id: req.body._id
@@ -152,6 +167,8 @@ router.post('/login', (req, res, next) => {
                 if (result) {
                     const token = jwt.sign({
                             email: user.email,
+                            userType : user.userType,
+                            userId: user._id,
                             //                            userId: user._id
                         },
                         process.env.JWT_KEY, {
@@ -166,6 +183,7 @@ router.post('/login', (req, res, next) => {
                         name: user.name,
                         email:user.email,
                         type: user.userType,
+                        resumedownloadlimit:user.resumedownloadlimit,
                     });
                 }
                 res.status(401).json({

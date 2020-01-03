@@ -17,12 +17,21 @@ var userSchema = new Schema({
     required: true
   },
   userType: {
-    type: String
+    type: String,
+    enum:['applicant','recruiter'],
+    default:'applicant',
   },
   name:{
     type: String,
     required: true,
   },
+  resumedownloadlimit:{
+   type: Number, default: 0 
+  },
+  expirationdate:{
+    type:Date,
+    default:null
+  }
 });
 
 module.exports = mongoose.model("User", userSchema);

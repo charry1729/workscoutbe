@@ -8,15 +8,14 @@ const Job = require("../models/jobs");
 const Profile = require("../models/profile")
 const User = require("../models/users")
 const JobApplication = require("../models/jobApplications")
-router.all('*', cors());
 const fs = require('fs')
 const { promisify } = require('util')
 
 const unlinkAsync = promisify(fs.unlink)
 
 
-// const SERVER_IP = "3.229.152.95:3001";
-const SERVER_IP = "localhost:3001";
+const SERVER_IP = "3.229.152.95:3001";
+// const SERVER_IP = "localhost:3001";
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -32,7 +31,9 @@ const fileFilter = (req, file, cb) => {
     if (
         file.mimetype === "application/doc" ||
         file.mimetype === "application/docx" ||
-        file.mimetype === "application/pdf"
+        file.mimetype === "application/pdf" ||
+        file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        file.mimetype === "application/msword"
     ) {
         cb(null, true); //accept a file
     } else {
@@ -101,6 +102,7 @@ router.get("/", (req, res, next) => {
                             companyName: docs.companyName,
                             Website: docs.Website,
                             companyDescription: docs.companyDescription,
+                            salaryType: docs.salaryType,
                             request: {
                                 type: "GET",
                                 url: "http://"+SERVER_IP+"/job/" + docs._id
@@ -149,6 +151,7 @@ router.post("/", checkAuth, (req, res, next) => {
         location: req.body.location,
         jobType: req.body.jobType,
         url: req.body.url,
+        experience: req.body.experience,
         minimumrate: req.body.minimumrate,
         maximumrate: req.body.maximumrate,
         minimumsalary: req.body.minimumsalary,
@@ -158,6 +161,7 @@ router.post("/", checkAuth, (req, res, next) => {
         Website: req.body.Website,
         companyDescription: req.body.companyDescription,
         closeDate: req.body.closeDate,
+        salaryType: req.body.salaryType || 'YEARLY',
         // createdBy: req.body.createdBy,
         // name: req.body.name,
         // price: req.body.price,
@@ -188,6 +192,7 @@ router.post("/", checkAuth, (req, res, next) => {
                     maximumrate: result.maximumrate,
                     minimumsalary: result.minimumsalary,
                     maximumsalary: result.maximumsalary,
+                    salaryType: result.salaryType,
                     companyDetails: result.companyDetails,
                     companyName: result.companyName,
                     Website: result.Website,
@@ -208,6 +213,50 @@ router.post("/", checkAuth, (req, res, next) => {
                 error: err
             });
         });
+});
+
+
+router.post("/update",checkAuth,(req,res,next)=>{
+
+    console.log(req.body);
+    // console.log(req.userData);
+    Job.findOneAndUpdate({'_id':req.body.jobID,createdBy:req.userData.userId},
+        {
+            $set:{
+                name: req.body.name,
+                email: req.body.email,
+                title: req.body.title,
+                primaryResponsibilities: req.body.primaryResponsibilities,
+                requirements: req.body.requirements,
+                description:req.body.description,
+                location: req.body.location,
+                jobType: req.body.jobType,
+                url: req.body.url,
+                minimumsalary: req.body.minimumsalary,
+                maximumsalary: req.body.maximumsalary,
+                experience: req.body.experience,
+                closeDate: req.body.closeDate,
+                salaryType: req.body.salaryType,
+                companyName: req.body.companyName,
+                Website: req.body.Website,
+                companyDescription: req.body.companyDescription,
+            }
+        },
+        function(err,doc){
+            if(err){
+                res.status(404).json({
+                    message:"error updating the job"
+                })
+            }else{
+
+                console.log(doc);
+                res.status(200).json({
+                    message:"Update complete"
+                });
+            }
+        }
+        )
+    
 });
 
 
@@ -258,6 +307,7 @@ router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
                                     resume : file ? file.path : profile.resume,
                                     applicantProfile:profile,
                                     jobId:job,
+                                    appliedOn: new Date(),
                                 });
                                 new_jobApplication.save()
                                                     .then(jobapp=>{
@@ -307,76 +357,6 @@ router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
         })
     })
 
-
-    // Job.findById(req.body.jobId)
-    // .then(()=>{
-
-    //     User.findOne({
-    //         email: req.userData.email,
-    //     }).then(usr=>{
-    //         // user = usr;
-    //         // console.log("here");
-    //         // console.log(usr);
-    //         Profile.findOne({
-    //             user_id : usr._id,
-    //         }).then(profile=>{
-    //             // console.log(profile);
-    //             return Job.findOneAndUpdate(
-    //                 {
-    //                     '_id':req.body.jobId
-    //                 },
-    //                 {
-    //                     '$addToSet':{
-    //                         applicants:profile,
-    //                     }
-    //                 })
-                
-    //         }).then(()=>{
-    //             return Job.findById(req.body.jobId)
-    //                 .then(job=>{
-    //                     return Profile.findOneAndUpdate(
-    //                         {
-    //                             user_id: usr._id,
-    //                         },
-    //                         {
-    //                             '$addToSet':{
-    //                                 jobsApplied:job,
-    //                             }
-    //                         }
-    //                     )
-    //                 })
-    //                 .catch(err=>{
-    //                     res.status(404).json({
-    //                         message:"JobId Not found",
-    //                     })
-    //                     // return
-    //                 })
-    //         }).then(()=>{
-    //             // console.log("Last always");
-    //             res.status(200).json({
-    //                 message:"Job applied successfully"
-    //             })
-    //         })
-    //         .catch(err=>{
-    //             res.status(404).json({
-    //                 message : "Profile is not found"
-    //             })
-    //         })
-
-            
-    //     }).catch(err=>{
-    //         res.status(500).json({
-    //             message:"User not Found",
-    //         })
-    //     })
-
-    // })
-    // .catch(err=>{
-    //     res.status(404).json({
-    //         message:"Job Not found",
-    //     })
-    //     // return;
-    // })
     
 
 });
@@ -483,7 +463,7 @@ router.get("/createdBy/:createdBy", async (req, res, next) => {
     Job.find({
             createdBy: req.params.createdBy
         })
-        .populate("profile")
+        // .populate("profile")
         .exec()
         .then(doc => {
             console.log(doc);
@@ -533,7 +513,7 @@ router.patch("/:jobId", (req, res, next) => {
             });
         });
 });
-router.delete("/:_id", (req, res, next) => {
+router.delete("/:_id", checkAuth,(req, res, next) => {
     const ID = req.params._id;
     Job.remove({
             _id: ID
@@ -550,6 +530,36 @@ router.delete("/:_id", (req, res, next) => {
             });
         });
 });
+
+router.post("/markFilled",checkAuth,(req,res,next)=>{
+    console.log({createdBy:req.userData.userId,_id:req.body.jobID});
+    Job.findOneAndUpdate({createdBy:req.userData.userId,_id:req.body.jobID},
+    {
+        $set:{
+            filled: true,
+        }
+    },
+    function(err,doc){
+        if(err){
+            res.status(403).json({
+                message:"Permission denied",
+            })
+            return
+        }
+        console.log(doc);
+        if(!doc){
+            res.status(404).json({
+                message:"Job not found",
+            })
+        }
+        else{
+            res.status(200).json({
+                message:"Marked as Filled",
+            })
+        }
+    }
+    )
+})
 
 router.post("/searchResult", async (req, res, next) => {
     console.log(req.body.title, req.body.location);
@@ -591,6 +601,104 @@ router.post("/searchResult", async (req, res, next) => {
         });
 });
 
+router.get("/allapps",(res,req,next)=>{
+    console.log(JobApplication)
+    JobApplication.find().then(doc=>{
+        res.status(200).json({
+            data: doc,
+        })
+    })
+});
+
+router.post("/application/purchase",checkAuth,(req,res,next)=>{
+    console.log("In purchase");
+    console.log(req.body);
+    if(!req.body.applicationId){
+        res.status(404).json({
+            message:"No applicationId found"
+        })
+        return;
+    }
+    // JobApplication.findById(req.body.applicationId).then(applicant=>{
+    //     console.log(applicant);
+    //     res.status(200).json({
+    //         message:'nonsense',
+    //     });
+    // })
+
+    // JobApplication.find({"_id":req.body.applicationId}).then(doc=>{
+    //     console.log(doc);
+    // })
+
+    JobApplication.findById(req.body.applicationId,function(err,doc){if(err){
+        return err;
+    }
+    console.log(doc);
+    return doc;
+    }).then(application=>{
+        console.log(application)
+        if(! application){
+            res.status(404).json({
+                message:"Not found",
+            })
+            return
+        }
+        User.findOne({
+            email:req.userData.email,
+        }).then(usr=>{
+            if(application.purchased){
+                res.status(200).json({
+                    message:"Already Purchased",
+                    resume:application.resume,
+                })
+                return
+            }
+
+            if(usr.resumedownloadlimit<1){
+                res.status(403).json({
+                    message:"No resumes left download package to get more resumes",
+                })
+            }else{
+                return User.update({
+                    email: req.userData.email,
+                }, {
+                    $set: {resumedownloadlimit: usr.resumedownloadlimit - 1}
+                }).then(data=>{
+                    return JobApplication.findOneAndUpdate({
+                        _id:req.body.applicationId,
+                    },
+                    {
+                        $set:{
+                            purchased:true,
+                        }
+                    },
+                    function(err,doc){
+                        if(err){
+
+                        }
+                        console.log(doc)
+                        // console.log(application);
+                        res.status(200).json({
+                            message:'purchased',
+                            resume: application.resume,
+                        })
+
+                    })
+                })
+
+            }
+        })
+
+
+    }).catch(err=>{
+        res.status(404).json({
+            message:"No application found"
+        })
+    })
+
+
+});
+
 
 
 router.post("/applications", checkAuth,(req,res,next)=>{
@@ -602,41 +710,85 @@ router.post("/applications", checkAuth,(req,res,next)=>{
         console.log(user);
         if(user.userType == 'applicant'){
             console.log("Not allowed to view")
-        }else{
-            return Job.findOne({
-                _id : req.body.jobId,
-            }).populate('applicants')
-            .then(job=>{
-                console.log("job is");
-                console.log(job['createdBy']);
-                console.log(user._id);
-                console.log(typeof(job['createdBy']));
-                console.log(typeof(user._id));
-
-                if(String(job['createdBy']) == String(user._id)){
-                    let data=[];
-                    for(let i=0;i<job["applicants"].length;i++){
-                        data[i] = {};
-                        if(job['applicants'][i]['purchased']){
-                            data[i]['resume'] = job['applicants'][i]['resume'];
-                        }
-                        data[i]['purchased'] = job['applicants'][i]['purchased'];
-                        data[i]['applicationStatus'] = job['applicants'][i]['applicationStatus'];
-                        data[i]['rating'] = job['applicants'][i]['rating'];
-                        data[i]['note'] = job['applicants'][i]['note'];
-                        data[i]['applicantName'] = job['applicants'][i]['applicantName'];
-                        data[i]['applicantEmail'] = job['applicants'][i]['applicantEmail'];
-                        data[i]['applicantMessage'] = job['applicants'][i]['applicantMessage'];
-                    }
-                    res.status(200).json({
-                        applicants:data,
-                    })
-                }else{
-                    res.status(401).json({
-                        message:"Not allowed to view this job applicants",
-                    })
-                }
+            res.status(403).json({
+                message:"Not allowed to view resumes",
             })
+        }else{
+            return Job.find({
+                createdBy: req.userData.userId,
+            }).populate('applicants')
+            .then(jobs=>{
+                console.log(jobs);
+                // res.status(200).json({
+                //     'message': 'Works',
+                // })
+                dataTosend=[]
+                jobs.forEach(job=>{
+
+                    // if(String(job['createdBy']) == String(user._id)){
+                    // let data=[];
+                    for(let i=0;i<job["applicants"].length;i++){
+                        // data[i] = {};
+                        console.log(job['applicants'][i])
+                        if(!job['applicants'][i]['purchased']){
+                            // data[i]['resume'] = job['applicants'][i]['resume'];
+                            job['applicants'][i]['resume']="";
+                        }
+                        // data[i]['applicationId'] = job['applicants'][i]._id;
+                        // data[i]['purchased'] = job['applicants'][i]['purchased'];
+                        // data[i]['applicationStatus'] = job['applicants'][i]['applicationStatus'];
+                        // data[i]['rating'] = job['applicants'][i]['rating'];
+                        // data[i]['note'] = job['applicants'][i]['note'];
+                        // data[i]['applicantName'] = job['applicants'][i]['applicantName'];
+                        // data[i]['applicantEmail'] = job['applicants'][i]['applicantEmail'];
+                        // data[i]['applicantMessage'] = job['applicants'][i]['applicantMessage'];
+                        // data[i]['appliedOn'] = job['applicants'][i]['appliedOn'];
+                        }
+                        // job.applicants=data;
+                        dataTosend.push(job);
+                    // }
+
+                })
+                res.status(200).json({
+                    message:"Job and Applicant",
+                    job: dataTosend,
+                })
+            })
+
+            // return Job.findOne({
+            //     _id : req.body.jobId,
+            // }).populate('applicants')
+            // .then(job=>{
+            //     console.log("job is");
+            //     console.log(job['createdBy']);
+            //     console.log(user._id);
+            //     console.log(typeof(job['createdBy']));
+            //     console.log(typeof(user._id));
+
+            //     if(String(job['createdBy']) == String(user._id)){
+            //         let data=[];
+            //         for(let i=0;i<job["applicants"].length;i++){
+            //             data[i] = {};
+            //             if(job['applicants'][i]['purchased']){
+            //                 data[i]['resume'] = job['applicants'][i]['resume'];
+            //             }
+            //             data[i]['purchased'] = job['applicants'][i]['purchased'];
+            //             data[i]['applicationStatus'] = job['applicants'][i]['applicationStatus'];
+            //             data[i]['rating'] = job['applicants'][i]['rating'];
+            //             data[i]['note'] = job['applicants'][i]['note'];
+            //             data[i]['applicantName'] = job['applicants'][i]['applicantName'];
+            //             data[i]['applicantEmail'] = job['applicants'][i]['applicantEmail'];
+            //             data[i]['applicantMessage'] = job['applicants'][i]['applicantMessage'];
+            //         }
+            //         res.status(200).json({
+            //             applicants:data,
+            //         })
+            //     }else{
+            //         res.status(401).json({
+            //             message:"Not allowed to view this job applicants",
+            //         })
+            //     }
+            // })
         }
     })
     .catch(err=>{
@@ -646,6 +798,73 @@ router.post("/applications", checkAuth,(req,res,next)=>{
     })
     
 });
+
+
+router.post("/application/delete",checkAuth,(res,req,next)=>{
+    const appId = req.body.applicationId;
+    JobApplication.remove({
+        _id: appId,
+    }).then(re=>{
+        res.status(200).json({
+            message:"Deleted successfully"
+        })
+    }).catch(err=>{
+        res.status(500).json({
+            message:"An error occured",
+            error: err,
+        })
+    })
+});
+
+
+router.post("/application/addNote",checkAuth,(res,req,next)=>{
+    const appId = req.body.applicationId;
+    JobApplication.findOneAndUpdate(
+        {
+            _id:appId
+        },
+        {
+            $set:{
+                note : req.body.note,
+            }
+        }).then(doc=>{
+            res.status(200).json({
+                message:"Note added",
+            })
+        })
+        .catch(err=>{
+            res.status(500).json({
+                message:"Error while adding note",
+            })
+        })
+
+});
+
+
+router.post("/application/edit",checkAuth,(res,req,next)=>{
+    const appId = req.body.applicationId;
+    JobApplication.findOneAndUpdate(
+        {
+            _id:appId
+        },
+        {
+            $set:{
+                applicationStatus : req.body.applicationStatus.toUpperCase(),
+                rating: req.body.rating,
+            }
+        }).then(doc=>{
+            res.status(200).json({
+                message:"Succesfully added",
+            })
+        })
+        .catch(err=>{
+            res.status(500).json({
+                message:"Error while making changes",
+            })
+        })
+
+});
+
 
 
 module.exports = router;

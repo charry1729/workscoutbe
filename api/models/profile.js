@@ -24,7 +24,7 @@ const profileSchema = mongoose.Schema({
     },
     //  category: {
     //     type: Schema.Types.ObjectId,
-    //     ref: 'User'
+    //     ref: 'User
     // },
     skills: {
         type: String
@@ -52,6 +52,12 @@ const profileSchema = mongoose.Schema({
     },
     companyName: {
         type: String
+    },
+    videoUrl:{
+        type: String
+    },
+    image:{
+        type:String
     },
     jobsApplied:[{type:mongoose.Schema.Types.ObjectId, ref: 'JobAppSchema'}]
 

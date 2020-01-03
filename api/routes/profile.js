@@ -9,12 +9,21 @@ const User = require('../models/users');
 
 const multer = require("multer");
 
-// const SERVER_IP = "3.229.152.95:3001";
-const SERVER_IP = "localhost:3001";
+const SERVER_IP = "3.229.152.95:3001";
+// const SERVER_IP = "localhost:3001";
 
 
 
 const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "./uploads/");
+    },
+    filename: function (req, file, cb) {
+        cb(null, new Date().toISOString() + file.originalname);
+    }
+});
+
+const storage2 = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "./uploads/");
     },
@@ -43,12 +52,37 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
+const fileFilter2 = (req, file, cb) => {
+    //    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+    if (
+        file.mimetype === "image/jpeg" ||
+        file.mimetype === "image/png"
+    ) {
+        cb(null, true); //accept a file
+    } else {
+        cb(
+            new Error({
+                message: "File Type is not accepted"
+            }),
+            false
+        ); //reject a file
+    }
+};
+
 const uploads = multer({
     storage: storage,
     limits: {
         fileSize: 1024 * 1024 * 5
     },
     fileFilter: fileFilter
+});
+
+const uploads2 = multer({
+    storage: storage2,
+    limits: {
+        fileSize: 1024 * 1024
+    },
+    fileFilter: fileFilter2
 });
 // const uploads = multer({
 //     dest: 'uploads/'
@@ -58,6 +92,48 @@ const uploads = multer({
 //     console.log("++++++++++");
 //     console.log("body : ", req.body);
 //     console.log("++++++++++");
+
+router.post("/myprofile",uploads2.single('image'),(req,res,next)=>{
+    const file = req.file
+    Profile.find({user_id:req.body.userid})
+        .then(profile=>{
+            return Profile.findOneAndUpdate(
+                {
+                    user_id:req.body.userid
+                },
+                {
+                    $set:{
+                        fullName: req.body.fullName || profile[0].fullName,
+                        email:req.body.email || profile[0].email,
+                        aboutMe:req.body.aboutMe || profile[0].aboutMe,
+                        image: file? file.path : profile[0].image,
+                        phoneNumber:req.body.phoneNumber || profile[0].phoneNumber,
+                        videoUrl: req.body.videoUrl || profile[0].videoUrl,
+                    }
+                },
+                function(err,doc){
+                    if(err){
+                        res.status(500).json({
+                            message:"Error while updating profile",
+                        })
+                    }else{
+                        let img = file? file.path : profile[0].image;
+                        res.status(200).json({
+                            message: "Profile Updated Successfully",
+                            image: img,
+                        })
+                    }
+                }
+                )
+
+
+        })
+        .catch(err=>{
+            res.status(404).json({
+                message:"No profile found",
+            })
+        })
+});
 
 router.post('/',uploads.single('resume'), (req, res, next) => {
     const file = req.file
@@ -154,7 +230,8 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     education: result.education,
                     phoneNumber: result.phoneNumber,
                     salary: result.salary,
-                    companyName: result.companyName
+                    companyName: result.companyName,
+                    jobsApplied: result.jobsApplied,
 
                 },
                 request: {
@@ -169,7 +246,6 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                 error: err
             });
         });
-
 
 });
 router.get("/:userid/all",(req,res,next)=>{
@@ -211,6 +287,8 @@ router.get('/:userid', (req, res, next) => {
                     salary: result.salary,
                     companyName: result.companyName,
                     jobsApplied: result.jobsApplied,
+                    image:result.image,
+                    videoUrl:result.videoUrl,
                 },
                 request: {
                     type: 'GET',
@@ -243,6 +321,33 @@ router.get('/:userid', (req, res, next) => {
 //         });
 
 // });
+router.post('/resumes',checkAuth,(req, res, next)=>{
+    console.log(req.userData);
+    if(1 != 1 && req.userData['userType'] == 'applicant' ){
+        res.status(401).json({
+            message:'Only recruiter can browse resumes',
+        })
+    }
+    else{
+        Profile.find()
+            .select({'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0})
+            .then(profiles=>{
+                res.status(200).json({
+                    message:"works",
+                    resumes : profiles,
+                })  
+            })
+            .catch(err=>{
+                res.status(200).json({
+                    message:"error while retrieving resumes",
+                })  
+            })
+         
+    }
+   
+});
+
+
 
 router.patch('/:_id', (req, res, next) => {
     console.log(req.body);

@@ -10,6 +10,9 @@ const jobSchema = mongoose.Schema({
     name: {
         type: String
     },
+    email:{
+        type:String,
+    },
     title: {
         type: String
     },
@@ -18,6 +21,9 @@ const jobSchema = mongoose.Schema({
     },
     closeDate:{
         type: String
+    },
+    experience:{
+        type: String,
     },
     createdBy: {
         //type: String
@@ -47,6 +53,11 @@ const jobSchema = mongoose.Schema({
     url: {
         type: String
     },
+    salaryType:{
+        type: String,
+        enum:['YEARLY','HOURLY'],
+        default: 'YEARLY',
+    },
     minimumrate: {
         type: Number
     },
@@ -70,6 +81,10 @@ const jobSchema = mongoose.Schema({
     },
     companyDescription: {
         type: String
+    },
+    filled:{
+        type:Boolean,
+        default: false
     },
     applicants:[{type:mongoose.Schema.Types.ObjectId, ref: 'JobAppSchema'}],
 
