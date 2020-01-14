@@ -6,7 +6,6 @@ const jobapplicationschema = mongoose.Schema({
         type:Boolean,
         default: false,
     },
-
     resume:{
         type:String,
     },

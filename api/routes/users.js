@@ -47,6 +47,7 @@ router.post('/signup', (req, res, next) => {
                                 const profile = new Profile({
                                     _id : new mongoose.Types.ObjectId(),
                                     user_id: result._id,
+                                    type:result.userType,
                                 });
                                 profile.save()
                                         .then(result =>{

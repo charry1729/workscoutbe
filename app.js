@@ -18,16 +18,16 @@ app.use(cors());
 
 // testdb2 for test and prod for production 
 
-mongoose.connect(
-    'mongodb+srv://apps:' +
-    process.env.MONGO_ATLAS_PW +
-    '@node-practise-avqsi.mongodb.net/', {
-        dbName: 'prod'
-    }
-);
+// mongoose.connect(
+//     'mongodb+srv://apps:' +
+//     process.env.MONGO_ATLAS_PW +
+//     '@node-practise-avqsi.mongodb.net/', {
+//         dbName: 'testdb1'
+//     }
+// );
 
 //mongoose.connect('mongodb://mongodb0.example.com:27017/admin');
-// mongoose.connect('mongodb://localhost:27017/admin');
+mongoose.connect('mongodb://localhost:27017/stag');
 // const MongoClient = require('mongodb').MongoClient
 // const myurl = 'mongodb://localhost:27017';
 

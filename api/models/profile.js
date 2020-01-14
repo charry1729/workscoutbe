@@ -22,6 +22,11 @@ const profileSchema = mongoose.Schema({
         required:true,
         unique: true,
     },
+    type:{
+        type: String,
+        enum:['applicant','recruiter'],
+        default:'applicant',
+    },
     //  category: {
     //     type: Schema.Types.ObjectId,
     //     ref: 'User
@@ -47,8 +52,13 @@ const profileSchema = mongoose.Schema({
     phoneNumber: {
         type: String
     },
-    salary: {
-        type: Number
+    salaryperyear: {
+        type: Number,
+        default:10000,
+    },
+    salaryperhour:{
+        type:Number,
+        default:15,
     },
     companyName: {
         type: String

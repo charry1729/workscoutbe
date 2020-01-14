@@ -264,7 +264,7 @@ router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
     // console.log(req);
     // console.log(req.userData);
     // let user;
-    // console.log(req.body);
+    console.log(req.body);
     const file = req.file;
 
     if(! req.body.jobId){
@@ -800,7 +800,7 @@ router.post("/applications", checkAuth,(req,res,next)=>{
 });
 
 
-router.post("/application/delete",checkAuth,(res,req,next)=>{
+router.post("/application/delete",checkAuth,(req,res,next)=>{
     const appId = req.body.applicationId;
     JobApplication.remove({
         _id: appId,
@@ -817,7 +817,7 @@ router.post("/application/delete",checkAuth,(res,req,next)=>{
 });
 
 
-router.post("/application/addNote",checkAuth,(res,req,next)=>{
+router.post("/application/addNote",checkAuth,(req,res,next)=>{
     const appId = req.body.applicationId;
     JobApplication.findOneAndUpdate(
         {
@@ -841,7 +841,9 @@ router.post("/application/addNote",checkAuth,(res,req,next)=>{
 });
 
 
-router.post("/application/edit",checkAuth,(res,req,next)=>{
+router.post("/application/edit",checkAuth,(req,res,next)=>{
+    console.log('In edit');
+    console.log(req.body);
     const appId = req.body.applicationId;
     JobApplication.findOneAndUpdate(
         {
@@ -866,5 +868,12 @@ router.post("/application/edit",checkAuth,(res,req,next)=>{
 });
 
 
+router.post('/appl',(req,res,next)=>{
+    JobApplication.find().then(appls=>{
+        res.status(200).json({
+            data:appls,
+        })
+    })
+})
 
 module.exports = router;

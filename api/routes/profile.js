@@ -163,8 +163,11 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                             aboutMe: req.body.aboutMe ? req.body.aboutMe : profile[0].aboutMe,
                             education: req.body.education ? req.body.education : profile[0].education,
                             phoneNumber:  req.body.phoneNumber ? req.body.phoneNumber : profile[0].phoneNumber,
-                            salary: req.body.salary ? req.body.salary : profile.salary,
+                            salaryperyear: req.body.salaryperyear ? req.body.salaryperyear : profile.salaryperyear,
+                            salaryperhour: req.body.salaryperhour ? req.body.salaryperhour : profile.salaryperhour,
+
                             companyName: req.body.companyName ? req.body.companyName : profile[0].companyName,
+
                             }
                     },
                     function (err, doc) {
@@ -199,7 +202,9 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     aboutMe: req.body.aboutMe,
                     education: req.body.education,
                     phoneNumber: req.body.phoneNumber,
-                    salary: req.body.salary,
+                    // salary: req.body.salary,
+                    salaryperhour: req.body.salaryperhour,
+                    salaryperyear: req.body.salaryperyear,
                     companyName: req.body.companyName
                 });
                 return new_profile.save();
@@ -213,7 +218,7 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     // ID: result._id,
                     // job: result.job,
                     // quantity: result.quantity,
-                    // _id: result._id,
+                    _id: result._id,
                     // quantity: req.body.quantity,
                     // job: req.body.jobId
                     userId: result.user_id,
@@ -229,7 +234,8 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     aboutMe: result.aboutMe,
                     education: result.education,
                     phoneNumber: result.phoneNumber,
-                    salary: result.salary,
+                    salaryperyear: result.salaryperyear,
+                    salaryperhour: result.salaryperhour,
                     companyName: result.companyName,
                     jobsApplied: result.jobsApplied,
 
@@ -284,7 +290,8 @@ router.get('/:userid', (req, res, next) => {
                     aboutMe: result.aboutMe,
                     education: result.education,
                     phoneNumber: result.phoneNumber,
-                    salary: result.salary,
+                    salaryperyear: result.salaryperyear,
+                    salaryperhour: result.salaryperhour,
                     companyName: result.companyName,
                     jobsApplied: result.jobsApplied,
                     image:result.image,
@@ -321,6 +328,15 @@ router.get('/:userid', (req, res, next) => {
 //         });
 
 // });
+router.post('/res',(req,res,next)=>{
+    console.log('Here');
+Profile.find().then(profiles=>{
+    res.status(200).json({
+        "profiles": profiles,
+    })
+})
+});
+
 router.post('/resumes',checkAuth,(req, res, next)=>{
     console.log(req.userData);
     if(1 != 1 && req.userData['userType'] == 'applicant' ){
@@ -333,7 +349,7 @@ router.post('/resumes',checkAuth,(req, res, next)=>{
             .select({'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0})
             .then(profiles=>{
                 res.status(200).json({
-                    message:"works",
+                    message:"Resumes",
                     resumes : profiles,
                 })  
             })
