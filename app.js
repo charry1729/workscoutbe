@@ -29,6 +29,7 @@ app.use(cors());
 //mongoose.connect('mongodb://mongodb0.example.com:27017/admin');
 mongoose.connect('mongodb://localhost:27017/testdb');
 // mongoose.connect('mongodb://localhost:27017/stag');
+// mongoose.connect('mongodb://localhost:27017/stag?authSource=admin');
 // const MongoClient = require('mongodb').MongoClient
 // const myurl = 'mongodb://localhost:27017';
 
