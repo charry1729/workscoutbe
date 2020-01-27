@@ -96,50 +96,71 @@ router.post('/changePassword', checkAuth,(req, res, next) => {
     User.findOne({
             _id: req.body._id
         })
-        // .exec()
         .then(user => {
-            
-                bcrypt.compare(req.body.old_password, user.password, (err, result) => {
-                    if (err) {
-                        res.status(500).json({
-                            error: err,
-                            message: "Old password was given wrong",
-                        });
-                    } 
-                    if(result){
-                        if(req.body.new_password){
-                            
-                        }else{
-                            
-                        }
+            console.log("FOund user");
+            bcrypt.compare(req.body.password, user.password, (err, result) => {
+                console.log("In compare success")
+                console.log(err,result);
+                if (err) {
+                    res.status(500).json({
+                        error: err,
+                        message: "Old password was given wrong",
+                    });
+                    return;
+                }
+                if(result){
+                    console.log("In compare success")
+                    if(req.body.new_password){
+
+                        bcrypt.hash(req.body.new_password, 10, (err, hash) => {
+                            if(err){
+                                res.status(500).json({
+                                    message:"Hash not working",
+                                })
+                                return;
+                            }
+                            if(hash){
+                                User.findOneAndUpdate(
+                                    {
+                                        _id: req.body._id
+                                    },
+                                    {
+                                        $set:{
+                                            password:hash,
+                                        }
+                                    },
+                                    function(err,doc){
+                                        if(err){
+                                            res.status(500).json({
+                                                message:'User updation failed',
+                                            })
+                                        }
+                                        if(doc){
+                                            res.status(200).json({
+                                                message:"Password successfully changed",
+                                            })
+                                        }
+                                    })
+                            }
+                        })
+                        
+                    }else{
+                        res.status(404).json({
+                            message:'Password Missing',
+                        })
                     }
-                    
-                    // else {
-                    //     const user = new User({
-                    //         _id: new mongoose.Types.ObjectId(),
-                    //         email: req.body.email,
-                    //         password: hash,
-                    //         name: req.body.username,
-                    //         userType: req.body.type,
-                    //     });
-                    //     user.save()
-                    //         .then(result => {
-                    //             console.log(result);
-                    //             res.status(201).json({
-                    //                 message: 'User Created',
-                    //             });
-                    //         })
-                    //         .catch(err => {
-                    //             res.status(500).json({
-                    //                 error: err
-                    //             });
-                    //         });
-                    // }
-                });
-
-
-            
-        });
+                }else{
+                    res.status(403).json({
+                        message:"Old password did'nt match",
+                    });
+                }
+            });
+        })
+        .catch(err=>{
+            res.status(403).json({
+                message:'Updation failed',
+            })
+        })
 
 });
 
