@@ -4,6 +4,8 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
 const checkAuth = require("../middleware/check-auth");
+const isApplicant = require("../middleware/isapplicant");
+const isRecruiter  = require("../middleware/isrecruiter")
 const Job = require("../models/jobs");
 const Profile = require("../models/profile")
 const User = require("../models/users")
@@ -14,8 +16,8 @@ const { promisify } = require('util')
 const unlinkAsync = promisify(fs.unlink)
 
 
-// const SERVER_IP = "3.229.152.95:3001";
-const SERVER_IP = "localhost:3001";
+const SERVER_IP = "3.229.152.95:3001";
+// const SERVER_IP = "localhost:3001";
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -68,7 +70,9 @@ router.get("/all",(req,res,next)=>{
 });
 
 router.get("/", (req, res, next) => {
-    Job.find()
+    Job.find({
+        filled: false,
+    })
         // .populate(applicants)
         .sort({
             createdAt: -1
@@ -125,7 +129,7 @@ router.get("/", (req, res, next) => {
         });
 });
 
-router.post("/", checkAuth, (req, res, next) => {
+router.post("/", isRecruiter, (req, res, next) => {
     //router.post('/', checkAuth, uploads.single('productImage'), (req, res, next) => {
     // const product = {
     //     name : req.body.name,
@@ -216,7 +220,7 @@ router.post("/", checkAuth, (req, res, next) => {
 });
 
 
-router.post("/update",checkAuth,(req,res,next)=>{
+router.post("/update",isRecruiter,(req,res,next)=>{
 
     console.log(req.body);
     // console.log(req.userData);
@@ -531,7 +535,7 @@ router.delete("/:_id", checkAuth,(req, res, next) => {
         });
 });
 
-router.post("/markFilled",checkAuth,(req,res,next)=>{
+router.post("/markFilled",isRecruiter,(req,res,next)=>{
     console.log({createdBy:req.userData.userId,_id:req.body.jobID});
     Job.findOneAndUpdate({createdBy:req.userData.userId,_id:req.body.jobID},
     {
@@ -610,7 +614,7 @@ router.get("/allapps",(res,req,next)=>{
     })
 });
 
-router.post("/application/purchase",checkAuth,(req,res,next)=>{
+router.post("/application/purchase",isRecruiter,(req,res,next)=>{
     console.log("In purchase");
     console.log(req.body);
     if(!req.body.applicationId){
@@ -701,7 +705,7 @@ router.post("/application/purchase",checkAuth,(req,res,next)=>{
 
 
 
-router.post("/applications", checkAuth,(req,res,next)=>{
+router.post("/applications", isRecruiter,(req,res,next)=>{
     console.log("In applications");
     console.log(req.userData);
     User.findOne({
@@ -800,7 +804,7 @@ router.post("/applications", checkAuth,(req,res,next)=>{
 });
 
 
-router.post("/application/delete",checkAuth,(req,res,next)=>{
+router.post("/application/delete",isRecruiter,(req,res,next)=>{
     const appId = req.body.applicationId;
     JobApplication.remove({
         _id: appId,
@@ -817,7 +821,7 @@ router.post("/application/delete",checkAuth,(req,res,next)=>{
 });
 
 
-router.post("/application/addNote",checkAuth,(req,res,next)=>{
+router.post("/application/addNote",isRecruiter,(req,res,next)=>{
     const appId = req.body.applicationId;
     JobApplication.findOneAndUpdate(
         {
@@ -841,7 +845,7 @@ router.post("/application/addNote",checkAuth,(req,res,next)=>{
 });
 
 
-router.post("/application/edit",checkAuth,(req,res,next)=>{
+router.post("/application/edit",isRecruiter,(req,res,next)=>{
     console.log('In edit');
     console.log(req.body);
     const appId = req.body.applicationId;
@@ -874,6 +878,13 @@ router.post('/appl',(req,res,next)=>{
             data:appls,
         })
     })
-})
+});
+
+router.post("/testing",isRecruiter,(req,res,next)=>{
+    console.log(req.userData);
+    res.status(200).json({
+        message:"check",
+    });
+});
 
 module.exports = router;

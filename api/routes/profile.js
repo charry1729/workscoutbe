@@ -9,8 +9,8 @@ const User = require('../models/users');
 
 const multer = require("multer");
 
-// const SERVER_IP = "3.229.152.95:3001";
-const SERVER_IP = "localhost:3001";
+const SERVER_IP = "3.229.152.95:3001";
+// const SERVER_IP = "localhost:3001";
 
 
 
@@ -254,6 +254,23 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
         });
 
 });
+
+router.get("/:userid/profile",(req,res,next)=>{
+    Profile.findOne({user_id:req.params.userid})
+    .populate('jobsApplied')
+        // .populate('jobsApplied','jobId')
+
+    .then((data)=>{
+        console.log(data);
+        res.status(200).json({
+            profile: data,
+        })
+    })
+    // res.status(200).json({
+    //     message:"done",
+    // })
+});
+
 router.get("/:userid/all",(req,res,next)=>{
     Profile.findOne({user_id:req.params.userid})
     // .populate('jobsApplied')
