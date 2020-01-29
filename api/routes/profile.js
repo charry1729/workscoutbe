@@ -355,14 +355,29 @@ Profile.find().then(profiles=>{
 });
 
 router.post('/resumes',checkAuth,(req, res, next)=>{
-    console.log(req.userData);
-    if(1 != 1 && req.userData['userType'] == 'applicant' ){
+    if(req.userData['userType'] == 'applicant'){
         res.status(401).json({
             message:'Only recruiter can browse resumes',
         })
     }
     else{
-        Profile.find()
+        Profile.find({
+            type:{
+                $ne:"recuiter",
+            },
+            fullName:{
+                $nin:[null,undefined,''],
+            },
+            email:{
+                $nin:[null,undefined,''],
+            },
+            skills:{
+                $nin:[null,undefined,''],
+            },
+            aboutMe:{
+                $nin:[null,undefined,''],
+            }
+        })
             .select({'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0})
             .then(profiles=>{
                 res.status(200).json({
@@ -375,11 +390,8 @@ router.post('/resumes',checkAuth,(req, res, next)=>{
                     message:"error while retrieving resumes",
                 })  
             })
-         
     }
-   
 });
-
 
 
 router.patch('/:_id', (req, res, next) => {
