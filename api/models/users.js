@@ -31,7 +31,11 @@ var userSchema = new Schema({
   expirationdate:{
     type:Date,
     default:null
-  }
+  },
+  verified:{
+    type:Boolean,
+    default:false,
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);

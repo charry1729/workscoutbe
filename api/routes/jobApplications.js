@@ -12,6 +12,7 @@ const fs = require('fs')
 const { promisify } = require('util')
 
 
+
 // router.post("/purchase",checkAuth,(req,res,next)=>{
 
 // 	console.log("In purchase");
@@ -35,12 +36,15 @@ const { promisify } = require('util')
 
 // });
 
-// router.get("/alljob",(req,res,next)=>{
-// 	Job.find().then(job=>{
-// 		res.status(200).json({
-// 			data:job,
-// 		})
-// 	})
+// router.get("/testmail",(req,res,next)=>{
+// 	const msg = {
+//     to: 'test@example.com',
+//     from: 'test@example.com',
+//     subject: 'Sending with Twilio SendGrid is Fun',
+//     text: 'and easy to do anywhere, even with Node.js',
+//     html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+//     };
+//     sgMail.send(msg);
 // })
 
 

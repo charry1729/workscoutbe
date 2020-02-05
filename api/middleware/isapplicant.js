@@ -6,10 +6,16 @@ module.exports = (req,res,next)=>{
     const decoded = jwt.verify(token,process.env.JWT_KEY);
     if(decoded.userType == "applicant"){
         req.userData = decoded;
-        next();
     }else{
         throw Error;
     }
+    if(!decoded.verify){
+      return res.status(401).json({
+        message:"You need to verify email"
+      })
+    }
+    next();
+
   }  catch(error){
         return res.status(401).json({
             message : 'Not Allowed',
