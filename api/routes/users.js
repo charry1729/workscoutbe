@@ -12,7 +12,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
 
 
-const SERVER_IP = "3.229.152.95:3001";
+const SERVER_IP = "3.229.152.95";
 // const SERVER_IP = "localhost:3001";
 
 router.get("/all",(req,res,next)=>{
@@ -51,7 +51,7 @@ router.post('/sendMail',(req,res,next)=>{
                     templateId: tempID,
                     dynamic_template_data: {
                         sample_name:req.body.username,
-                        verify_url:"http://"+SERVER_IP+"/verify.html?id="+result.id+"&hash="+hash,
+                        verify_url:"http://"+SERVER_IP+"/workscout/HTML/verify.html?id="+result.id+"&hash="+hash,
                     }
                   };
                 sgMail.send(msg, (error, result) => {
