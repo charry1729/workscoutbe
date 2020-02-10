@@ -16,8 +16,8 @@ const { promisify } = require('util')
 const unlinkAsync = promisify(fs.unlink)
 
 
-// const SERVER_IP = "3.229.152.95:3001";
-const SERVER_IP = "localhost:3001";
+const SERVER_IP = "3.229.152.95:3001";
+// const SERVER_IP = "localhost:3001";
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {

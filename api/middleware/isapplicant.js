@@ -9,7 +9,7 @@ module.exports = (req,res,next)=>{
     }else{
         throw Error;
     }
-    if(!decoded.verify){
+    if(!decoded.verified){
       return res.status(401).json({
         message:"You need to verify email"
       })
