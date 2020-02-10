@@ -16,8 +16,8 @@ const { promisify } = require('util')
 const unlinkAsync = promisify(fs.unlink)
 
 
-const SERVER_IP = "3.229.152.95:3001";
-// const SERVER_IP = "localhost:3001";
+// const SERVER_IP = "3.229.152.95:3001";
+const SERVER_IP = "localhost:3001";
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -127,6 +127,222 @@ router.get("/", (req, res, next) => {
                 error: err
             });
         });
+});
+
+router.get("/testget",(req,res,next)=>{
+    console.log(req.body)
+    // let sortBy = "createdAt";
+    // let filterBy = true;
+    let jb = ['freelance','part time','full time','contract'];
+    let skipNum  = 0;
+    try{
+        if(isNaN(Number(req.body.page))){
+            throw "Not a numnber"
+        }
+        skipNum = (Number(req.body.page)-1)*10 > 0 ? (Number(req.body.page)-1)*10 : 0 ;
+    }
+    catch(err){
+        console.error("page number invalid");
+    }
+    if((req.body.jobType || []).length){
+        jb = req.body.jobType
+    }
+    let sortQuery = {'createdAt':-1} 
+    if(req.body.sort){
+        sortQuery = {},
+        sortQuery[req.body.sort] = req.body.sortDir || -1;
+    }
+    let keyword= req.body.keyword || "";
+    let location= req.body.location || "";
+    // let jobs ;
+
+    Job.find({
+        $or:[
+            {
+                primaryResponsibilities:{
+                    $regex: new RegExp(keyword, "i")
+                }
+            },
+            {
+                companyName:{
+                    $regex: new RegExp(keyword, "i")
+                }
+            },
+            {
+                title:{
+                    $regex: new RegExp(keyword, "i")
+                }
+            }
+        ],
+        filled:false,
+        jobType:{
+            $in: jb,
+        },
+        location:{
+            $regex: new RegExp(location, "i")
+        }
+    })
+    .select({
+        applicants:0
+    })
+    .sort(sortQuery)
+    .skip( skipNum  )
+    .limit(10)
+    .then(jobs=>{
+        // jobs = result;
+
+        Job.aggregate([
+            // { $match: { seller: user, status: 'completed'  } }, 
+            // { $group: { _id: 'jobType', count: {$sum: 1} } }
+            {
+                $match: {
+                    $or:[
+                        {
+                            primaryResponsibilities:{
+                                $regex: new RegExp(keyword, "i")
+                            }
+                        },
+                        {
+                            companyName:{
+                                $regex: new RegExp(keyword, "i")
+                            }
+                        },
+                        {
+                            title:{
+                                $regex: new RegExp(keyword, "i")
+                            }
+                        }
+                    ],
+                    filled:false,
+                    jobType:{
+                        $in: jb,
+                    },
+                    location:{
+                        $regex: new RegExp(location, "i")
+                    }
+                }
+            },
+            // { $unwind: "$jobType" },
+            {
+                $group: {
+                    // type: {$toLower: '$jobType'},
+                    _id:"$jobType",
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                  _id: 0,
+                  jobType: "$_id",
+                  count: 1,
+                }
+            }
+        ])
+        // Job.distin
+        .then(result=>{
+            res.status(200).json({
+                counts:result,
+                jobs
+            })
+        })
+        // Job.find({
+        //     $or:[
+        //         {
+        //             primaryResponsibilities:{
+        //                 $regex: new RegExp(keyword, "i")
+        //             }
+        //         },
+        //         {
+        //             companyName:{
+        //                 $regex: new RegExp(keyword, "i")
+        //             }
+        //         },
+        //         {
+        //             title:{
+        //                 $regex: new RegExp(keyword, "i")
+        //             }
+        //         }
+        //     ],
+        //     jobType:{
+        //         $in: jb,
+        //     },
+        //     location:{
+        //         $regex: new RegExp(location, "i")
+        //     }
+        // }).count()
+        // .then(count=>{
+        //     Job.aggregate([
+        //         // { $match: { seller: user, status: 'completed'  } }, 
+        //         // { $group: { _id: 'jobType', count: {$sum: 1} } }
+        //         {
+        //             $match: {
+        //                 $or:[
+        //                     {
+        //                         primaryResponsibilities:{
+        //                             $regex: new RegExp(keyword, "i")
+        //                         }
+        //                     },
+        //                     {
+        //                         companyName:{
+        //                             $regex: new RegExp(keyword, "i")
+        //                         }
+        //                     },
+        //                     {
+        //                         title:{
+        //                             $regex: new RegExp(keyword, "i")
+        //                         }
+        //                     }
+        //                 ],
+        //                 jobType:{
+        //                     $in: jb,
+        //                 },
+        //                 location:{
+        //                     $regex: new RegExp(location, "i")
+        //                 }
+        //             }
+        //         },
+        //         // { $unwind: "$jobType" },
+        //         {
+        //             $group: {
+        //                 // type: {$toLower: '$jobType'},
+        //                 _id:"$jobType",
+        //                 count: { $sum: 1 }
+        //             }
+        //         }
+        //     ])
+        //     // Job.distin
+        //     .then(result=>{
+        //         res.status(200).json({
+        //             count:count,
+        //             aggre:result,
+        //             jobs
+        //         })
+        //     })
+        // })
+        
+
+    })
+    // Job.aggregate().facet({
+    //     data:[
+    //         {
+    //             $match:{},
+    //         },
+    //         {
+    //             $sort:{
+    //                 createdAt:-1,
+    //             }
+    //         },{
+    //             $filter:{
+                    
+    //             }
+    //         }
+    //     ],
+    //     total:[{$count:'count'}]
+    // }).then(result=>{
+    //     res.status(200).json({
+    //         res:result,
+    //     })
+    // })
 });
 
 router.post("/", isRecruiter, (req, res, next) => {

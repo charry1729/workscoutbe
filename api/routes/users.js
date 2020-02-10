@@ -12,8 +12,8 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
 
 
-const SERVER_IP = "3.229.152.95";
-// const SERVER_IP = "localhost:3001";
+const SERVER_IP_WO_PORT = "3.229.152.95";
+// const SERVER_IP_WO_PORT = "localhost";
 
 router.get("/all",(req,res,next)=>{
     User.find().then((data)=>{
@@ -51,7 +51,7 @@ router.post('/sendMail',(req,res,next)=>{
                     templateId: tempID,
                     dynamic_template_data: {
                         sample_name:req.body.username,
-                        verify_url:"http://"+SERVER_IP+"/workscout/HTML/verify.html?id="+result.id+"&hash="+hash,
+                        verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user._id+"&hash="+hash,
                     }
                   };
                 sgMail.send(msg, (error, result) => {
@@ -113,7 +113,7 @@ router.post('/signup', (req, res, next) => {
                                             templateId: tempID,
                                             dynamic_template_data: {
                                                 sample_name:req.body.username,
-                                                verify_url:"http://"+SERVER_IP+"/workscout/HTML/verify.html?id="+result.id+"&hash="+hash,
+                                                verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+result.id+"&hash="+hash,
                                             }
                                           };
                                         // const msg = {
