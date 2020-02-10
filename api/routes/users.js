@@ -51,7 +51,7 @@ router.post('/sendMail',(req,res,next)=>{
                     templateId: tempID,
                     dynamic_template_data: {
                         sample_name:req.body.username,
-                        verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user._id+"&hash="+hash,
+                        verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user.id+"&hash="+hash,
                     }
                   };
                 sgMail.send(msg, (error, result) => {
