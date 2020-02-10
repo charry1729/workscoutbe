@@ -45,6 +45,7 @@ router.post('/sendMail',(req,res,next)=>{
                 })
             }
             if(hash){
+                console.log(user);
                 const msg = {
                     to: req.body.email,
                     from: 'verify@workscout.com',
