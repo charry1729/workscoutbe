@@ -46,6 +46,8 @@ router.post('/sendMail',(req,res,next)=>{
             }
             if(hash){
                 console.log(user);
+                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user.id+"&hash="+hash);
+                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user._id+"&hash="+hash)
                 const msg = {
                     to: req.body.email,
                     from: 'verify@workscout.com',
