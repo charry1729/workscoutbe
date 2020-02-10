@@ -46,15 +46,15 @@ router.post('/sendMail',(req,res,next)=>{
             }
             if(hash){
                 console.log(user);
-                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user.id+"&hash="+hash);
-                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user._id+"&hash="+hash)
+                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user[0].id+"&hash="+hash);
+                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user[0]._id+"&hash="+hash)
                 const msg = {
                     to: req.body.email,
                     from: 'verify@workscout.com',
                     templateId: tempID,
                     dynamic_template_data: {
                         sample_name:req.body.username,
-                        verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user.id+"&hash="+hash,
+                        verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+user[0].id+"&hash="+hash,
                     }
                   };
                 sgMail.send(msg, (error, result) => {
