@@ -379,6 +379,8 @@ router.post('/resumes',checkAuth,(req, res, next)=>{
             }
         })
             .select({'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0})
+            .limit(10)
+            .skip(0)
             .then(profiles=>{
                 res.status(200).json({
                     message:"Resumes",
@@ -391,6 +393,48 @@ router.post('/resumes',checkAuth,(req, res, next)=>{
                 })  
             })
     }
+});
+
+router.post("/resumesNew",(req,res,next)=>{
+    console.log(req.body);
+    let sf = true // Salary filter
+    let sortF = {} 
+    let skills = (req.body.skills || '').split(",");
+    // var x = ["sai","test","jacob","justin"],
+    let regex = skills.map(function (e) { return new RegExp(e, "i"); });
+    Profile.find({
+        type:{
+            $ne:"recuiter",
+        },
+        fullName:{
+            $nin:[null,undefined,''],
+        },
+        email:{
+            $nin:[null,undefined,''],
+        },
+        skills:{
+            $nin:[null,undefined,''],
+            $in:regex,
+        },
+        aboutMe:{
+            $nin:[null,undefined,''],
+        }
+    })
+        .select({'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0})
+        .limit(10)
+        .skip(0)
+        .then(profiles=>{
+            res.status(200).json({
+                message:"Resumes",
+                resumes : profiles,
+            })  
+        })
+        .catch(err=>{
+            res.status(200).json({
+                message:"error while retrieving resumes",
+            })  
+    })
+
 });
 
 

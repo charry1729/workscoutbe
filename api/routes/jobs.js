@@ -69,7 +69,7 @@ router.get("/all",(req,res,next)=>{
     // })
 });
 
-router.get("/", (req, res, next) => {
+router.get("/testget", (req, res, next) => {
     Job.find({
         filled: false,
     })
@@ -129,7 +129,7 @@ router.get("/", (req, res, next) => {
         });
 });
 
-router.get("/testget",(req,res,next)=>{
+router.get("/",(req,res,next)=>{
     console.log(req.body)
     // let sortBy = "createdAt";
     // let filterBy = true;
@@ -922,12 +922,9 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
 
 
 router.post("/applications", isRecruiter,(req,res,next)=>{
-    console.log("In applications");
-    console.log(req.userData);
     User.findOne({
         email: req.userData.email,
     }).then(user=>{
-        console.log(user);
         if(user.userType == 'applicant'){
             console.log("Not allowed to view")
             res.status(403).json({
@@ -938,7 +935,7 @@ router.post("/applications", isRecruiter,(req,res,next)=>{
                 createdBy: req.userData.userId,
             }).populate('applicants')
             .then(jobs=>{
-                console.log(jobs);
+                // console.log(jobs);
                 // res.status(200).json({
                 //     'message': 'Works',
                 // })
@@ -1063,7 +1060,6 @@ router.post("/application/addNote",isRecruiter,(req,res,next)=>{
 
 router.post("/application/edit",isRecruiter,(req,res,next)=>{
     console.log('In edit');
-    console.log(req.body);
     const appId = req.body.applicationId;
     JobApplication.findOneAndUpdate(
         {
