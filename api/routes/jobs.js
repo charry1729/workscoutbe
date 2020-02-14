@@ -139,7 +139,7 @@ router.get("/",(req,res,next)=>{
         if(isNaN(Number(req.body.page))){
             throw "Not a numnber"
         }
-        skipNum = (Number(req.body.page)-1)*10 > 0 ? (Number(req.body.page)-1)*10 : 0 ;
+        skipNum = (Number(req.body.page)-1)*25 > 0 ? (Number(req.body.page)-1)*25 : 0 ;
     }
     catch(err){
         console.error("page number invalid");
@@ -187,7 +187,7 @@ router.get("/",(req,res,next)=>{
     })
     .sort(sortQuery)
     .skip( skipNum  )
-    .limit(10)
+    .limit(25)
     .then(jobs=>{
         // jobs = result;
 
