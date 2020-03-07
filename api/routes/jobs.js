@@ -378,6 +378,7 @@ router.post("/", isRecruiter, (req, res, next) => {
         minimumsalary: req.body.minimumsalary,
         maximumsalary: req.body.maximumsalary,
         companyDetails: req.body.companyDetails,
+        currencysymbol: req.body.currencysymbol,
         companyName: req.body.companyName,
         Website: req.body.Website,
         companyDescription: req.body.companyDescription,

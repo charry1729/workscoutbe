@@ -67,6 +67,9 @@ const jobSchema = mongoose.Schema({
     minimumsalary: {
         type: Number
     },
+    currencysymbol:{
+        type: String
+    },
     maximumsalary: {
         type: Number
     },

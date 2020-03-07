@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const checkAuth = require("../middleware/check-auth");
+// const schedule = require("node-schedule");
 
 const User = require('../models/users');
 const Profile = require("../models/profile")
@@ -11,6 +12,11 @@ const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
 
+// let i=1;
+// var j = schedule.scheduleJob('* * * * *', function(){
+//     console.log('The answer to life, the universe, and everything! '+i);
+//     i++;
+//   });
 
 const SERVER_IP_WO_PORT = "3.229.152.95";
 // const SERVER_IP_WO_PORT = "localhost";
