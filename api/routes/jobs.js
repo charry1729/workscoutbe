@@ -142,7 +142,7 @@ router.get("/",(req,res,next)=>{
         skipNum = (Number(req.body.page)-1)*25 > 0 ? (Number(req.body.page)-1)*25 : 0 ;
     }
     catch(err){
-        console.error("page number invalid");
+        // console.error("page number invalid");
     }
     if((req.body.jobType || []).length){
         jb = req.body.jobType

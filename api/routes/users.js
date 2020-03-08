@@ -11,6 +11,7 @@ const Profile = require("../models/profile")
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
+const FTID = process.env.FORGET_PASSWORD_TEMPLATE; //Forgot password email template
 
 // let i=1;
 // var j = schedule.scheduleJob('* * * * *', function(){
@@ -446,7 +447,123 @@ router.get("/testmail",(req,res,next)=>{
     res.status(200).json({
         message:"done",
     })
-})
+});
 
+
+router.post('/forgot/password',(req,res,next)=>{
+    User.find({
+        email:req.body.email,
+    }).then(user=>{
+        console.log(user);
+        if(user.length==0){
+            return res.status(404).json({
+                message:"Email is not registered",
+            })
+        }
+        console.log(FTID);
+        bcrypt.hash(user[0].password,10,(err,hash)=>{
+            if(err){
+                res.status(500).json({
+                    error : err,
+                })
+            }
+            if(hash){
+                console.log(user);
+                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/reset-password.html?id="+user[0].id+"&hash="+hash);
+                console.log("http://"+SERVER_IP_WO_PORT+"/workscout/HTML/reset-password.html?id="+user[0]._id+"&hash="+hash)
+                const msg = {
+                    to: req.body.email,
+                    from: 'resetpassword@workscout.com',
+                    templateId: FTID,
+                    dynamic_template_data: {
+                        sample_name:user[0].name || 'User',
+                        verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/reset-password.html?id="+user[0].id+"&hash="+hash,
+                    }
+                  };
+                sgMail.send(msg, (error, result) => {
+                    if (error) {
+                        res.status(500).json({
+                            message:'Error occured try again later',
+                        })
+                    } else {
+                        res.status(201).json({
+                            message: 'Reset Password link sent to your email ',
+                        });
+                    }
+                });
+            }
+        })
+
+    }).catch(err=>{
+        res.status(500).json({
+            message:err.message,
+        })
+    })
+});
+
+router.post("/reset/password",(req,res,next)=>{
+    if(!req.body.new_password || !req.body.id){
+        return res.status(400).json({
+            message:"Invalid password",
+        })
+    }
+    User.findById(req.body.id).then(user=>{
+        if(!user){
+            return res.status(404).json({
+                message:"User not found",
+            })
+        }
+        let password = user.password;
+
+        bcrypt.compare(password,req.body.hash,(err,result)=>{
+
+            if(err){
+                return res.status(500).json({
+                    message:'Server error! Try again later',
+                })
+            }
+
+            if(result){
+                bcrypt.hash(req.body.new_password, 10, (err, hash) => {
+                    if(err){
+                        res.status(500).json({
+                            message:"Hash not working",
+                        })
+                        return;
+                    }
+                    if(hash){
+                        User.findOneAndUpdate(
+                            {
+                                _id: req.body.id
+                            },
+                            {
+                                $set:{
+                                    password:hash,
+                                }
+                            },
+                            function(err,doc){
+                                if(err){
+                                    res.status(500).json({
+                                        message:'Password updation failed',
+                                    })
+                                }
+                                if(doc){
+                                    res.status(200).json({
+                                        message:"Password updated successfully",
+                                    })
+                                }
+                            })
+                    }
+                })
+
+            }
+        })
+    }).catch(err=>{
+        return res.status(500).json({
+            message:'Not valid request',
+        })
+    })
+
+})
 
 module.exports = router;
