@@ -133,7 +133,7 @@ router.get("/",(req,res,next)=>{
     console.log(req.body)
     // let sortBy = "createdAt";
     // let filterBy = true;
-    let jb = ['freelance','part time','full time','contract'];
+    let jb = ['freelance','part time','full time','internship','contract'];
     let skipNum  = 0;
     try{
         if(isNaN(Number(req.body.page))){
