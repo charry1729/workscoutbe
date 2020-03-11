@@ -14,7 +14,8 @@ const jobSchema = mongoose.Schema({
         type:String,
     },
     title: {
-        type: String
+        type: String,
+        index:true,
     },
     createdAt: {
         type: Date
@@ -29,7 +30,8 @@ const jobSchema = mongoose.Schema({
         //type: String
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index:true,
     },
     views:{
         type:Number,
@@ -52,7 +54,8 @@ const jobSchema = mongoose.Schema({
         type: String
     },
     jobType: {
-        type: String
+        type: String,
+        index:true,
     },
     url: {
         type: String

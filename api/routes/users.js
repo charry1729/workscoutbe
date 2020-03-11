@@ -155,6 +155,7 @@ router.post('/signup', (req, res, next) => {
                                     _id : new mongoose.Types.ObjectId(),
                                     user_id: result._id,
                                     type:result.userType,
+                                    updated: new Date(),
                                 });
                                 profile.save()
                                 
@@ -366,6 +367,7 @@ router.post('/login', (req, res, next) => {
                             userType : user.userType,
                             userId: user._id,
                             verified:user.verified,
+                            resumedownloadlimit: user.resumedownloadlimit,
                         },
                         process.env.JWT_KEY, {
                             expiresIn: "10d"

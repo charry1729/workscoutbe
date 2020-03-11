@@ -949,7 +949,6 @@ router.post("/applications", isRecruiter,(req,res,next)=>{
                     // let data=[];
                     for(let i=0;i<job["applicants"].length;i++){
                         // data[i] = {};
-                        console.log(job['applicants'][i])
                         if(!job['applicants'][i]['purchased']){
                             // data[i]['resume'] = job['applicants'][i]['resume'];
                             job['applicants'][i]['resume']="";

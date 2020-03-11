@@ -32,7 +32,8 @@ const profileSchema = mongoose.Schema({
     //     ref: 'User
     // },
     skills: {
-        type: String
+        type: String,
+        index:true,
     },
     url: {
         type: String
@@ -69,10 +70,16 @@ const profileSchema = mongoose.Schema({
     image:{
         type:String
     },
+    updated:{
+        type:Date,
+        index: true,
+        // default : new Date(),
+    },
     jobsApplied:[{type:mongoose.Schema.Types.ObjectId, ref: 'JobAppSchema'}]
 
 });
 
+// profileSchema.index({})
 module.exports = mongoose.model('Profile', profileSchema);
 
 

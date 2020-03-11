@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require('mongoose');
 const checkAuth = require('../middleware/check-auth');
+const isRecruiter  = require("../middleware/isrecruiter")
 
 //const Job = require('../models/jobs');
 const Profile = require('../models/profile');
@@ -109,6 +110,7 @@ router.post("/myprofile",uploads2.single('image'),(req,res,next)=>{
                         image: file? file.path : profile[0].image,
                         phoneNumber:req.body.phoneNumber || profile[0].phoneNumber,
                         videoUrl: req.body.videoUrl || profile[0].videoUrl,
+                        updated: new Date(),
                     }
                 },
                 function(err,doc){
@@ -167,7 +169,7 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                             salaryperhour: req.body.salaryperhour ? req.body.salaryperhour : profile.salaryperhour,
 
                             companyName: req.body.companyName ? req.body.companyName : profile[0].companyName,
-
+                            updated: new Date(),
                             }
                     },
                     function (err, doc) {
@@ -205,7 +207,8 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     // salary: req.body.salary,
                     salaryperhour: req.body.salaryperhour,
                     salaryperyear: req.body.salaryperyear,
-                    companyName: req.body.companyName
+                    companyName: req.body.companyName,
+                    updated: new Date(),
                 });
                 return new_profile.save();
             }
@@ -238,6 +241,7 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     salaryperhour: result.salaryperhour,
                     companyName: result.companyName,
                     jobsApplied: result.jobsApplied,
+                    updated: new Date(),
 
                 },
                 request: {
@@ -354,13 +358,18 @@ Profile.find().then(profiles=>{
 })
 });
 
-router.post('/resumes',checkAuth,(req, res, next)=>{
+router.post('/resumes',isRecruiter,(req, res, next)=>{
     if(req.userData['userType'] == 'applicant'){
         res.status(401).json({
             message:'Only recruiter can browse resumes',
         })
     }
     else{
+        let selectFilter = {'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0};
+        if(! req.userData.resumedownloadlimit){
+        selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'professionalTitle':1}
+
+        }
         Profile.find({
             type:{
                 $ne:"recuiter",
@@ -376,9 +385,13 @@ router.post('/resumes',checkAuth,(req, res, next)=>{
             },
             aboutMe:{
                 $nin:[null,undefined,''],
+            },
+            resume:{
+                $nin:[null,undefined,''],
+
             }
         })
-            .select({'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0})
+            .select(selectFilter)
             .limit(10)
             .skip(0)
             .then(profiles=>{
@@ -395,10 +408,84 @@ router.post('/resumes',checkAuth,(req, res, next)=>{
     }
 });
 
+router.post('/resume/:id',isRecruiter,(req,res,next)=>{
+    
+    if(!req.params.id){
+        res.status(403).json({
+            message: 'No resume id provided',
+        })
+    }
+    Profile.findById(req.params.id)
+    .then(resume=>{
+        User.findById(req.userData.userId)
+        .then(user=>{
+        console.log('Found user');
+
+            if(user.resumedownloadlimit<=0){
+                return res.status(403).json({
+                    message:"Purchase any plan to download resume",
+                })
+            }
+                User.findOneAndUpdate(
+                {
+                    _id:req.userData.userId
+                },
+                {
+                    $inc:{
+                        resumedownloadlimit:-1,
+                    }
+                },
+                function(err,doc){
+                    if(err){
+                        res.status(500).json({
+                            message:"Something went wrong",
+                        })
+                    }
+                    if(doc){
+                        res.status(201).json({
+                            message:"Success",
+                            resume:resume.resume,
+                        })
+                    }
+                }
+            )
+        })
+        
+    })
+});
+
+router.post('/addDates',(req,res,next)=>{
+    User.findOneAndUpdate({_id:"5e65c7128dff8e6701b8267d"},{$set:{verified:true}}).then(user=>{
+        res.status(200).json({
+            message:"Success",
+        })
+    }).catch(err=>{
+        res.status(404).json({
+            message:err.message,
+        })
+    })
+});
+
 router.post("/resumesNew",(req,res,next)=>{
-    console.log(req.body);
+    // console.log(req.userData);
+    let selectFilter={'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0};
+    if(!req.body.resumedownloadlimit){
+        selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'updated':1,'professionalTitle':1}
+    }
     let sf = true // Salary filter
-    let sortF = {} 
+    let loc = req.body.loc || '';
+    let title = req.body.title || '';
+    let sortF = {};
+    if(req.body.sortBy){
+        if(req.body.sortBy=='latest'){
+            sortF = {
+                updated:'desc',
+            }
+        }else if(req.body.sortBy=='oldest'){
+            sortF ="updated"
+
+        }
+    }
     let skills = (req.body.skills || '').split(",");
     // var x = ["sai","test","jacob","justin"],
     let regex = skills.map(function (e) { return new RegExp(e, "i"); });
@@ -420,7 +507,8 @@ router.post("/resumesNew",(req,res,next)=>{
             $nin:[null,undefined,''],
         }
     })
-        .select({'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0})
+        .select(selectFilter)
+        .sort(sortF)
         .limit(10)
         .skip(0)
         .then(profiles=>{
@@ -430,6 +518,7 @@ router.post("/resumesNew",(req,res,next)=>{
             })  
         })
         .catch(err=>{
+            console.log(err);
             res.status(200).json({
                 message:"error while retrieving resumes",
             })  
