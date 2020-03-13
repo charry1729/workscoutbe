@@ -130,9 +130,72 @@ router.get("/testget", (req, res, next) => {
 });
 
 router.get("/",(req,res,next)=>{
-    console.log(req.body)
     // let sortBy = "createdAt";
     // let filterBy = true;
+    let jb = ['freelance','part time','full time','internship','contract'];
+    let skipNum  = 0;
+    let sortQuery = {'createdAt':-1} 
+    if(req.body.sort){
+        if(req.body.sort=="createdAt" || req.body.sort=="maximumsalary"){
+            sortQuery = {},
+            sortQuery[req.body.sort] = req.body.sortDir || -1;
+        }
+    }
+    // let jobs ;
+
+    Job.find({
+        filled:false,
+        jobType:{
+            $in: jb,
+        },
+    })
+    .select({
+        applicants:0
+    })
+    .sort(sortQuery)
+    .skip( skipNum  )
+    .limit(25)
+    .then(jobs=>{
+        // jobs = result;
+
+        Job.aggregate([
+            {
+                $match: {
+                    filled:false,
+                    jobType:{
+                        $in: jb,
+                    },
+                }
+            },
+            // { $unwind: "$jobType" },
+            {
+                $group: {
+                    // type: {$toLower: '$jobType'},
+                    _id:"$jobType",
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                  _id: 0,
+                  jobType: "$_id",
+                  count: 1,
+                }
+            }
+        ])
+        // Job.distin
+        .then(result=>{
+            res.status(200).json({
+                counts:result,
+                jobs
+            })
+        })
+        
+
+    })
+});
+
+router.post("/search/",isApplicant,(req,res,next)=>{
     let jb = ['freelance','part time','full time','internship','contract'];
     let skipNum  = 0;
     try{
@@ -145,12 +208,14 @@ router.get("/",(req,res,next)=>{
         // console.error("page number invalid");
     }
     if((req.body.jobType || []).length){
-        jb = req.body.jobType
+        jb = req.body.jobType.split(",");
     }
     let sortQuery = {'createdAt':-1} 
     if(req.body.sort){
-        sortQuery = {},
-        sortQuery[req.body.sort] = req.body.sortDir || -1;
+        if(req.body.sort=="createdAt" || req.body.sort=="maximumsalary"){
+            sortQuery = {},
+            sortQuery[req.body.sort] = req.body.sortDir || -1;
+        }
     }
     let keyword= req.body.keyword || "";
     let location= req.body.location || "";
@@ -192,8 +257,6 @@ router.get("/",(req,res,next)=>{
         // jobs = result;
 
         Job.aggregate([
-            // { $match: { seller: user, status: 'completed'  } }, 
-            // { $group: { _id: 'jobType', count: {$sum: 1} } }
             {
                 $match: {
                     $or:[
@@ -238,112 +301,17 @@ router.get("/",(req,res,next)=>{
                 }
             }
         ])
-        // Job.distin
         .then(result=>{
             res.status(200).json({
                 counts:result,
                 jobs
             })
         })
-        // Job.find({
-        //     $or:[
-        //         {
-        //             primaryResponsibilities:{
-        //                 $regex: new RegExp(keyword, "i")
-        //             }
-        //         },
-        //         {
-        //             companyName:{
-        //                 $regex: new RegExp(keyword, "i")
-        //             }
-        //         },
-        //         {
-        //             title:{
-        //                 $regex: new RegExp(keyword, "i")
-        //             }
-        //         }
-        //     ],
-        //     jobType:{
-        //         $in: jb,
-        //     },
-        //     location:{
-        //         $regex: new RegExp(location, "i")
-        //     }
-        // }).count()
-        // .then(count=>{
-        //     Job.aggregate([
-        //         // { $match: { seller: user, status: 'completed'  } }, 
-        //         // { $group: { _id: 'jobType', count: {$sum: 1} } }
-        //         {
-        //             $match: {
-        //                 $or:[
-        //                     {
-        //                         primaryResponsibilities:{
-        //                             $regex: new RegExp(keyword, "i")
-        //                         }
-        //                     },
-        //                     {
-        //                         companyName:{
-        //                             $regex: new RegExp(keyword, "i")
-        //                         }
-        //                     },
-        //                     {
-        //                         title:{
-        //                             $regex: new RegExp(keyword, "i")
-        //                         }
-        //                     }
-        //                 ],
-        //                 jobType:{
-        //                     $in: jb,
-        //                 },
-        //                 location:{
-        //                     $regex: new RegExp(location, "i")
-        //                 }
-        //             }
-        //         },
-        //         // { $unwind: "$jobType" },
-        //         {
-        //             $group: {
-        //                 // type: {$toLower: '$jobType'},
-        //                 _id:"$jobType",
-        //                 count: { $sum: 1 }
-        //             }
-        //         }
-        //     ])
-        //     // Job.distin
-        //     .then(result=>{
-        //         res.status(200).json({
-        //             count:count,
-        //             aggre:result,
-        //             jobs
-        //         })
-        //     })
-        // })
         
 
     })
-    // Job.aggregate().facet({
-    //     data:[
-    //         {
-    //             $match:{},
-    //         },
-    //         {
-    //             $sort:{
-    //                 createdAt:-1,
-    //             }
-    //         },{
-    //             $filter:{
-                    
-    //             }
-    //         }
-    //     ],
-    //     total:[{$count:'count'}]
-    // }).then(result=>{
-    //     res.status(200).json({
-    //         res:result,
-    //     })
-    // })
-});
+})
+
 
 router.post("/", isRecruiter, (req, res, next) => {
     //router.post('/', checkAuth, uploads.single('productImage'), (req, res, next) => {

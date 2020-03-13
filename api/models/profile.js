@@ -39,7 +39,9 @@ const profileSchema = mongoose.Schema({
         type: String
     },
     experience: {
-        type: String
+        type: Number,
+        default:0,
+        index:true
     },
     resume: {
         type: String

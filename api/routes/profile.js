@@ -349,6 +349,13 @@ router.get('/:userid', (req, res, next) => {
 //         });
 
 // });
+
+router.get('/setUpdatedDates',(req,res,next)=>{
+    Profile.find({
+
+    })
+})
+
 router.post('/res',(req,res,next)=>{
     console.log('Here');
 Profile.find().then(profiles=>{
@@ -365,46 +372,145 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
         })
     }
     else{
+        console.log(req.body);
         let selectFilter = {'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0};
-        if(! req.userData.resumedownloadlimit){
-        selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'professionalTitle':1}
+        let skills = [RegExp(".*")];
+        let skipR = 0;
+        let sortFilter = {updated:-1}; // Newest by default
 
+        if(req.body.sortBy){
+
+            if(req.body.sortBy == "oldest"){
+                sortFilter = {updated:1};
+            }
         }
-        Profile.find({
-            type:{
-                $ne:"recuiter",
-            },
-            fullName:{
-                $nin:[null,undefined,''],
-            },
-            email:{
-                $nin:[null,undefined,''],
-            },
-            skills:{
-                $nin:[null,undefined,''],
-            },
-            aboutMe:{
-                $nin:[null,undefined,''],
-            },
-            resume:{
-                $nin:[null,undefined,''],
+
+        if(req.body.page){
+            try{
+                skipR = ( (Number(req.body.page)>=1 ? Number(req.body.page) : 1) - 1) * 10;
+            }catch(err){
+                skipR = 0;
+            }
+        }
+
+        // console.log(req);
+        if(req.body.skills && Array.isArray(req.body.skills)){
+            if(req.body.skills.length){
+                skills = []
+                req.body.skills.forEach(skill => {
+                    if(skill){
+                        skills.push(RegExp(skill,"i"));
+                    }
+                });
+            }
+        }
+        let expFilter = [{
+            experience:{
+                $gt:0,
+            }
+        }]
+
+        if(req.body.expCodes && Array.isArray(req.body.expCodes)){
+            if(req.body.expCodes.length){
+                expFilter=[]
+                req.body.expCodes.forEach(code=>{
+                    if(code==1){
+                        expFilter.push({
+                            experience:{
+                                $gte:0,
+                                $lte:12,
+                            }
+                        })
+
+                    }else if(code == 2){
+                        expFilter.push({
+                            experience:{
+                                $gte:12,
+                                $lte:24,
+                            }
+                        })
+
+                    }else if(code == 3){
+                        expFilter.push({
+                            experience:{
+                                $gte:24,
+                                $lte:36,
+                            }
+                        })
+                        
+                    }else if(code == 4){
+                        expFilter.push({
+                            experience:{
+                                $gte:36,
+                                $lte:60,
+                            }
+                        })
+                        
+                    }else if(code){
+                        expFilter.push({
+                            experience:{
+                                $gte:60,
+                            }
+                        })
+                    }
+                })
 
             }
-        })
-            .select(selectFilter)
-            .limit(10)
-            .skip(0)
-            .then(profiles=>{
+
+        }
+
+        // if(! req.userData.resumedownloadlimit){
+        //     selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'professionalTitle':1}
+        // }
+        console.log(expFilter);
+        console.log(skipR);
+        // console.log()
+        User.findById(req.userData.userId).then(user=>{
+            if(user.resumedownloadlimit<1){
+                selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'professionalTitle':1}
+            }
+            Profile.aggregate([
+                {
+                    $match: {
+                        $or: expFilter,
+                        type:{
+                            $ne:"recuiter",
+                        },
+                        fullName:{
+                            $nin:[null,undefined,''],
+                        },
+                        email:{
+                            $nin:[null,undefined,''],
+                        },
+                        skills:{
+                            $nin:[null,undefined,''],
+                            $in:skills,
+                        },
+                        aboutMe:{
+                            $nin:[null,undefined,''],
+                        },
+                        resume:{
+                            $nin:[null,undefined,''],
+                        },
+                        professionalTitle:RegExp(req.body.keyword || '','i'),
+                        region: RegExp(req.body.location || '','i')
+                    }
+                },
+                {
+                    $project:selectFilter,
+                }
+            ])
+            .sort(sortFilter)
+            .limit(15)
+            .skip(skipR)
+            .then(resumes=>{
                 res.status(200).json({
                     message:"Resumes",
-                    resumes : profiles,
-                })  
+                    resumes : resumes,
+                })
             })
-            .catch(err=>{
-                res.status(200).json({
-                    message:"error while retrieving resumes",
-                })  
-            })
+        })
+        
     }
 });
 
@@ -467,7 +573,7 @@ router.post('/addDates',(req,res,next)=>{
 });
 
 router.post("/resumesNew",(req,res,next)=>{
-    // console.log(req.userData);
+    console.log(req.body);
     let selectFilter={'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0};
     if(!req.body.resumedownloadlimit){
         selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'updated':1,'professionalTitle':1}
