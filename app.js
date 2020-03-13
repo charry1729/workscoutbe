@@ -1,4 +1,5 @@
 const express = require("express");
+const compression = require('compression');
 const app = express();
 const cors = require('cors');
 const morgan = require('morgan');
@@ -15,7 +16,7 @@ const User = require('./api/models/users');
 // router.all('*', cors());
 app.use(cors());
 
-
+app.use(compression());
 // testdb2 for test and prod for production 
 
 // mongoose.connect(
