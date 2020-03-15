@@ -5,7 +5,8 @@ const jobSchema = mongoose.Schema({
     //var jobSchema = new Schema({
 
     jobId: {
-        type: String
+        type: String,
+        index:true
     },
     name: {
         type: String

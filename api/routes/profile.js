@@ -398,11 +398,14 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
             if(req.body.skills.length){
                 skills = []
                 req.body.skills.forEach(skill => {
-                    if(skill){
+                    if(skill.trim()){
                         skills.push(RegExp(skill,"i"));
                     }
                 });
             }
+        }
+        if(!skills.length){
+            skills = [RegExp(".*")];
         }
         let expFilter = [{
             experience:{
@@ -446,7 +449,7 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
                             }
                         })
                         
-                    }else if(code){
+                    }else if(code == 5){
                         expFilter.push({
                             experience:{
                                 $gte:60,
@@ -457,6 +460,13 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
 
             }
 
+        }
+        if(expFilter.length==0){
+            expFilter = [{
+                experience:{
+                    $gt:0,
+                }
+            }]
         }
 
         // if(! req.userData.resumedownloadlimit){

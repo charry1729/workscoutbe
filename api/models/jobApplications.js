@@ -10,18 +10,21 @@ const jobapplicationschema = mongoose.Schema({
         type:String,
     },
     appliedOn:{
-        type:Date
+        type:Date,
+        index:true,
     },
 
     applicationStatus:{
         type:String,
         enum:['NEW','INTERVIEWED','OFFER EXTENDED','HIRED','ARCHIVED'],
         default: 'NEW',
+        index:true
     },
 
     rating:{
         type:Number,
         default:0,
+        index:true,
     },
 
     note:{
@@ -30,6 +33,7 @@ const jobapplicationschema = mongoose.Schema({
 
     applicantName:{
         type:String,
+        index:true,
     },
 
     applicantEmail:{

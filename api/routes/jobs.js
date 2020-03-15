@@ -1,5 +1,4 @@
 const express = require("express");
-var cors = require('cors');
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
@@ -18,6 +17,9 @@ const unlinkAsync = promisify(fs.unlink)
 
 const SERVER_IP = "3.229.152.95:3001";
 // const SERVER_IP = "localhost:3001";
+
+const APPLICANT_LIMIT = 10;
+const JOB_LIMIT = 25;
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -252,7 +254,7 @@ router.post("/search/",isApplicant,(req,res,next)=>{
     })
     .sort(sortQuery)
     .skip( skipNum  )
-    .limit(25)
+    .limit(JOB_LIMIT)
     .then(jobs=>{
         // jobs = result;
 
@@ -890,9 +892,37 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
 
 });
 
+router.get("/viewed/:id",(req,res,next)=>{
+    console.log(req.params);
+    let jobID = req.params.id;
+    if(!jobID){
+        return res.status(500).send();
+    }
+    Job.findOneAndUpdate(
+        {
+            _id:jobID,
+        },
+        {
+            $inc:{
+                views:1,
+            }
+        },function(err,doc){
+            console.log("Done",err,doc);
+            if(err){
+                return res.status(500).json({});
+            }
+            if(doc){
+                return res.status(200).json({});
+            }else{
+                res.status(404).send()
+            }
+        }
+    )
+});
 
 
-router.post("/applications", isRecruiter,(req,res,next)=>{
+
+router.post("/posted", isRecruiter,(req,res,next)=>{
     User.findOne({
         email: req.userData.email,
     }).then(user=>{
@@ -904,78 +934,25 @@ router.post("/applications", isRecruiter,(req,res,next)=>{
         }else{
             return Job.find({
                 createdBy: req.userData.userId,
-            }).populate('applicants')
+            })
+            .populate({
+                path:'applicants',
+                select:'applicantName',
+            })
+
             .then(jobs=>{
-                // console.log(jobs);
-                // res.status(200).json({
-                //     'message': 'Works',
-                // })
-                dataTosend=[]
+
+                let dataTosend = JSON.parse(JSON.stringify(jobs));
+                let i=0;
                 jobs.forEach(job=>{
-
-                    // if(String(job['createdBy']) == String(user._id)){
-                    // let data=[];
-                    for(let i=0;i<job["applicants"].length;i++){
-                        // data[i] = {};
-                        if(!job['applicants'][i]['purchased']){
-                            // data[i]['resume'] = job['applicants'][i]['resume'];
-                            job['applicants'][i]['resume']="";
-                        }
-                        // data[i]['applicationId'] = job['applicants'][i]._id;
-                        // data[i]['purchased'] = job['applicants'][i]['purchased'];
-                        // data[i]['applicationStatus'] = job['applicants'][i]['applicationStatus'];
-                        // data[i]['rating'] = job['applicants'][i]['rating'];
-                        // data[i]['note'] = job['applicants'][i]['note'];
-                        // data[i]['applicantName'] = job['applicants'][i]['applicantName'];
-                        // data[i]['applicantEmail'] = job['applicants'][i]['applicantEmail'];
-                        // data[i]['applicantMessage'] = job['applicants'][i]['applicantMessage'];
-                        // data[i]['appliedOn'] = job['applicants'][i]['appliedOn'];
-                        }
-                        // job.applicants=data;
-                        dataTosend.push(job);
-                    // }
-
+                    dataTosend[i]['applicants'] = job['applicants'].length;
+                    i+=1;
                 })
                 res.status(200).json({
                     message:"Job and Applicant",
                     job: dataTosend,
                 })
             })
-
-            // return Job.findOne({
-            //     _id : req.body.jobId,
-            // }).populate('applicants')
-            // .then(job=>{
-            //     console.log("job is");
-            //     console.log(job['createdBy']);
-            //     console.log(user._id);
-            //     console.log(typeof(job['createdBy']));
-            //     console.log(typeof(user._id));
-
-            //     if(String(job['createdBy']) == String(user._id)){
-            //         let data=[];
-            //         for(let i=0;i<job["applicants"].length;i++){
-            //             data[i] = {};
-            //             if(job['applicants'][i]['purchased']){
-            //                 data[i]['resume'] = job['applicants'][i]['resume'];
-            //             }
-            //             data[i]['purchased'] = job['applicants'][i]['purchased'];
-            //             data[i]['applicationStatus'] = job['applicants'][i]['applicationStatus'];
-            //             data[i]['rating'] = job['applicants'][i]['rating'];
-            //             data[i]['note'] = job['applicants'][i]['note'];
-            //             data[i]['applicantName'] = job['applicants'][i]['applicantName'];
-            //             data[i]['applicantEmail'] = job['applicants'][i]['applicantEmail'];
-            //             data[i]['applicantMessage'] = job['applicants'][i]['applicantMessage'];
-            //         }
-            //         res.status(200).json({
-            //             applicants:data,
-            //         })
-            //     }else{
-            //         res.status(401).json({
-            //             message:"Not allowed to view this job applicants",
-            //         })
-            //     }
-            // })
         }
     })
     .catch(err=>{
@@ -986,9 +963,78 @@ router.post("/applications", isRecruiter,(req,res,next)=>{
     
 });
 
+router.post("/applicants", isRecruiter ,(req,res,next)=>{
+    let findFilter = { createdBy: req.userData.userId };
+    if(req.body.jobId){
+        findFilter['_id'] = req.body.jobId;
+    }
+    console.log(findFilter);
+    User.findById(req.userData.userId)
+    .then(user=>{
+        Job.find(findFilter)
+        .select({_id:1,applicants:1})
+        .populate("applicants")
+        .then(jobs=>{
+            let jobIds = [];
+            jobs.forEach(job=>{
+                jobIds.push(job['_id']);
+            })
+            let page= isNaN(Number(req.body.page)) ? 0 : Number(req.body.page);
+            let skipE = (page-1)*APPLICANT_LIMIT;
+            
+
+            let appStatus = ['NEW','INTERVIEWED','OFFER EXTENDED','HIRED','ARCHIVED'];
+            if(req.body.appStatus && req.body.appStatus != "none"){
+                appStatus = [req.body.appStatus]
+            }
+            let sortF = {'appliedOn':-1};
+            if(req.body.sortBy){
+                if(req.body.sortBy == "appliedOn"){
+                    sortF = {'appliedOn':-1};
+                }
+                if(req.body.sortBy == "name"){
+                    sortF = {'applicantName':-1};
+                }
+                if(req.body.sortBy == 'rating'){
+                    sortF = {'rating':-1};
+                }
+            }
+            let selectFilter = {'applicantProfile':0};
+            if(user.resumedownloadlimit<1){
+                selectFilter = {'applicantProfile':0 , 'applicantEmail':0, 'applicantMessage':0 };
+            }
+            JobApplication.find({
+                jobId:{
+                    $in:jobIds,
+                },
+                applicationStatus:{
+                    $in:appStatus,
+                }
+            })
+            .select(selectFilter)
+            .sort(sortF)
+            .limit(APPLICANT_LIMIT)
+            .skip(skipE)
+            .then(applicants=>{
+
+                res.json({
+                    resumeLimit:user.resumedownloadlimit,
+                    applications:applicants
+                })
+            })
+        })
+
+    })
+
+    
+
+});
 
 router.post("/application/delete",isRecruiter,(req,res,next)=>{
     const appId = req.body.applicationId;
+    // JobApplication.findById({ // TODO remove from job too
+        
+    // })
     JobApplication.remove({
         _id: appId,
     }).then(re=>{
