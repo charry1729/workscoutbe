@@ -152,7 +152,8 @@ router.get("/",(req,res,next)=>{
         },
     })
     .select({
-        applicants:0
+        applicants:0,
+        views:0
     })
     .sort(sortQuery)
     .skip( skipNum  )
@@ -250,7 +251,8 @@ router.post("/search/",isApplicant,(req,res,next)=>{
         }
     })
     .select({
-        applicants:0
+        applicants:0,
+        views:0,
     })
     .sort(sortQuery)
     .skip( skipNum  )
