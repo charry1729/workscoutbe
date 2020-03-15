@@ -993,7 +993,7 @@ router.post("/applicants", isRecruiter ,(req,res,next)=>{
                     sortF = {'appliedOn':-1};
                 }
                 if(req.body.sortBy == "name"){
-                    sortF = {'applicantName':-1};
+                    sortF = {'applicantName':1};
                 }
                 if(req.body.sortBy == 'rating'){
                     sortF = {'rating':-1};
