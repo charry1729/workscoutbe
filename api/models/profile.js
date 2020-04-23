@@ -27,10 +27,6 @@ const profileSchema = mongoose.Schema({
         enum:['applicant','recruiter'],
         default:'applicant',
     },
-    //  category: {
-    //     type: Schema.Types.ObjectId,
-    //     ref: 'User
-    // },
     skills: {
         type: String,
         index:true,
@@ -75,24 +71,9 @@ const profileSchema = mongoose.Schema({
     updated:{
         type:Date,
         index: true,
-        // default : new Date(),
     },
     jobsApplied:[{type:mongoose.Schema.Types.ObjectId, ref: 'JobAppSchema'}]
 
 });
 
-// profileSchema.index({})
 module.exports = mongoose.model('Profile', profileSchema);
-
-
-// Education(optional)
-// School Name
-// Qualification(s)
-// Start / end date
-
-
-
-// Experience(optional)
-// Employer
-// Job Title
-// Start / end date

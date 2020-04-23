@@ -8,42 +8,19 @@ const mongoose = require('mongoose');
 var crypto = require('crypto');
 const profileRoutes = require('./api/routes/profile');
 const jobRoutes = require('./api/routes/jobs');
-// const productRoutes = require('./api/routes/products');
-// const orderRoutes = require('./api/routes/orders');
 const userRoutes = require('./api/routes/users');
 
 const User = require('./api/models/users');
-// router.all('*', cors());
-app.use(cors());
 
-app.use(compression());
-// testdb2 for test and prod for production 
+app.use(cors()); // Using Cors policy for CROSS ORIGIN CALLS
 
-// mongoose.connect(
-//     'mongodb+srv://apps:' +
-//     process.env.MONGO_ATLAS_PW +
-//     '@node-practise-avqsi.mongodb.net/', {
-//         dbName: 'testdb1'
-//     }
-// );
-
-//mongoose.connect('mongodb://mongodb0.example.com:27017/admin');
-// mongoose.connect('mongodb://localhost:27017/testdb');
-// mongoose.connect('mongodb://localhost:27017/stag');
-mongoose.connect('mongodb://localhost:27017/stag?authSource=admin');
-// const MongoClient = require('mongodb').MongoClient
-// const myurl = 'mongodb://localhost:27017';
-
-// MongoClient.connect(myurl, (err, client) => {
-//   if (err) return console.log(err)
-//   db = client.db('test') 
-//   app.listen(3000, () => {
-//     console.log('listening on 3000')
-//   })
-// })
+app.use(compression()); // Compressing responses to reduce data transfer to clients
 
 
-//mongoose.Promise = global.Promise;
+mongoose.connect('mongodb://localhost:27017/testdb');
+// mongoose.connect('mongodb://localhost:27017/stag?authSource=admin');
+
+
 app.use(morgan('dev'));
 
 app.use('/uploads', express.static('uploads'));
@@ -149,8 +126,6 @@ console.log("Date after " + expirationperiod + " months:", CurrentDate);
                     console.log(result);
                     result.resumedownloadlimit = user.resumedownloadlimit + downloadlimit;
                  res.status(200).json(result);
-                // res.render(__dirname + '/response.html', {key: key,salt: salt,txnid: txnid,amount: amount, productinfo: productinfo, 
-                //     firstname: firstname, email: email, mihpayid : mihpayid, status: status,resphash: resphash,msg:msg});
                 })
                 .catch(err => {
                     console.log(err);
@@ -167,8 +142,6 @@ console.log("Date after " + expirationperiod + " months:", CurrentDate);
                 error: err
             });
         });
-    // res.render(__dirname + '/response.html', {key: key,salt: salt,txnid: txnid,amount: amount, productinfo: productinfo, 
-    // firstname: firstname, email: email, mihpayid : mihpayid, status: status,resphash: resphash,msg:msg});
 });
 
 
@@ -231,14 +204,6 @@ app.post('/checkplanstatus', function(req, res){
         console.log("isactive" + String(isActive));
 
         res.status(200).json(isActive);
-        // console.log("userupdate", user);
-        // console.log("userupdatecount", user.resumedownloadlimit);
-        // var CurrentDate = new Date();
-        // console.log("Current date:", CurrentDate);
-        // CurrentDate.setMonth(CurrentDate.getMonth() + expirationperiod);
-        // console.log("Date after " + expirationperiod + " months:", CurrentDate);
-                
-        //  console.log("update" + user.resumedownloadlimit + downloadlimit + " expiration:", CurrentDate);     
        
     })
     .catch(err => {
@@ -266,9 +231,6 @@ app.use((req, res, next) => {
     next();
 });
 
-//routes which handle the requests 
-// app.use('/products',productRoutes);
-// app.use('/orders',orderRoutes);
 app.use('/user', userRoutes);
 app.use('/jobs', jobRoutes);
 app.use('/profile', profileRoutes);
@@ -306,7 +268,7 @@ const limit = rateLimit({
 app.use('/routeName', limit); // Setting limiter on specific route
 // Body Parser
 app.use(express.json({
-    limit: '10kb'
+    limit: '30kb'
 })); // Body limit is 10
 // Data Sanitization against NoSQL Injection Attacks
 app.use(mongoSanitize());

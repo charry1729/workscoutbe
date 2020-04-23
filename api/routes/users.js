@@ -22,6 +22,17 @@ const FTID = process.env.FORGET_PASSWORD_TEMPLATE; //Forgot password email templ
 const SERVER_IP_WO_PORT = "3.229.152.95";
 // const SERVER_IP_WO_PORT = "localhost";
 
+
+function ValidateEmail(mail)
+{
+    if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(mail))
+    {
+        return (true)
+    }
+        // alert("You have entered an invalid email address!")
+        return (false)
+}
+
 router.get("/all",(req,res,next)=>{
     User.find().then((data)=>{
         res.status(200).json({
@@ -82,7 +93,17 @@ router.post('/sendMail',(req,res,next)=>{
 });
 
 router.post('/signup', (req, res, next) => {
+    
+    if(!ValidateEmail(req.body.email)){
+        res.status(422).json({
+            message:"Invalid data",
+        })
+        return;
+    }
 
+    var email = req.body.email;
+    //changing email domain part to lowercase
+    email = email.split('@')[0]+ '@' + email.split('@')[1].toLowerCase();
 
     User.find({
             email: req.body.email
@@ -91,7 +112,7 @@ router.post('/signup', (req, res, next) => {
         .then(user => {
             if (user.length >= 1) {
                 return res.status(409).json({
-                    message: "email already exists"
+                    message: "Email already taken"
                 });
             } else {
                 bcrypt.hash(req.body.password, 10, (err, hash) => {
@@ -102,7 +123,7 @@ router.post('/signup', (req, res, next) => {
                     } else {
                         const user = new User({
                             _id: new mongoose.Types.ObjectId(),
-                            email: req.body.email,
+                            email: email,
                             password: hash,
                             name: req.body.username,
                             userType: req.body.type,
@@ -110,7 +131,7 @@ router.post('/signup', (req, res, next) => {
                         user.save()
                             .then(result => {
                                 console.log(result);
-                                bcrypt.hash(req.body.email,10,(err,hash)=>{
+                                bcrypt.hash(email,10,(err,hash)=>{
                                     if(err){
                                         res.status(500).json({
                                             error : err,
@@ -118,7 +139,7 @@ router.post('/signup', (req, res, next) => {
                                     }
                                     if(hash){
                                         const msg = {
-                                            to: req.body.email,
+                                            to: email,
                                             from: 'verify@workscout.com',
                                             templateId: tempID,
                                             dynamic_template_data: {
@@ -126,14 +147,6 @@ router.post('/signup', (req, res, next) => {
                                                 verify_url:"http://"+SERVER_IP_WO_PORT+"/workscout/HTML/verify.html?id="+result.id+"&hash="+hash,
                                             }
                                           };
-                                        // const msg = {
-                                        //     to: 'srnvs1186@gmail.com',
-                                        //     from: 'kiran.sai94000@gmail.com',
-                                        //     subject: 'Sending with Twilio SendGrid is Fun',
-                                        //     text: 'and easy to do anywhere, even with Node.js',
-                                        //     html: '<strong>and easy to do anywhere, even with Node.js</strong>',
-                                        // };
-                                        // sgMail.send(msg);
                                         sgMail.send(msg, (error, result) => {
                                             if (error) {
                                                 console.log(error);
@@ -343,7 +356,11 @@ router.post('/changePassword', checkAuth,(req, res, next) => {
 
 
 router.post('/login', (req, res, next) => {
-    console.log("body  : ", req.body);
+    if(!ValidateEmail(req.body.email)){
+        return res.status(422).json({
+            message:"Invalid Data"
+        })
+    }
     User.findOne({
             email: req.body.email
         })
@@ -412,45 +429,6 @@ router.delete('/:userId', (req, res, next) => {
             });
         });
 })
-
-router.get("/testmail",(req,res,next)=>{
-    console.log('In mail test');
-    console.log(tempID);
-    const msg = {
-        //extract the email details
-        // to: data.receiver,
-        // from: data.sender,
-        to: 'johnysins790@gmail.com',
-        from: 'verify@workscout.com',
-        templateId: tempID,
-        //extract the custom fields 
-        dynamic_template_data: {
-            sample_name:"Test3",
-            verify_url:"http://google.com"
-        }
-      };
-	// const msg = {
-    //     to: 'srnvs1186@gmail.com',
-    //     from: 'kiran.sai94000@gmail.com',
-    //     subject: 'Sending with Twilio SendGrid is Fun',
-    //     text: 'and easy to do anywhere, even with Node.js',
-    //     html: '<strong>and easy to do anywhere, even with Node.js</strong>',
-    // };
-    // sgMail.send(msg);
-    sgMail.send(msg, (error, result) => {
-        if (error) {
-            console.log(error);
-        } else {
-
-            // console.log(result);
-            console.log("Successfully sent");
-        }
-      });
-    res.status(200).json({
-        message:"done",
-    })
-});
-
 
 router.post('/forgot/password',(req,res,next)=>{
     User.find({

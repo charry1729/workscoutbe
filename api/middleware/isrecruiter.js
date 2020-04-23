@@ -16,8 +16,8 @@ module.exports = (req,res,next)=>{
     }
     next();
   }  catch(error){
-        return res.status(401).json({
-            message : 'Not allowed'
+        return res.status(440).json({
+            message : 'Session Expired'
         });
   }
     

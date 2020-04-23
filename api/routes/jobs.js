@@ -15,8 +15,8 @@ const { promisify } = require('util')
 const unlinkAsync = promisify(fs.unlink)
 
 
-const SERVER_IP = "3.229.152.95:3001";
-// const SERVER_IP = "localhost:3001";
+// const SERVER_IP = "3.229.152.95:3001";
+const SERVER_IP = "localhost:3001";
 
 const APPLICANT_LIMIT = 10;
 const JOB_LIMIT = 25;
@@ -31,7 +31,6 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    //    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
     if (
         file.mimetype === "application/doc" ||
         file.mimetype === "application/docx" ||
@@ -57,7 +56,6 @@ const uploads = multer({
     },
     fileFilter: fileFilter
 });
-//const uploads = multer({dest : 'uploads/'})
 
 router.get("/all",(req,res,next)=>{
     Job.find().populate('applicants').then((data)=>{
@@ -66,22 +64,16 @@ router.get("/all",(req,res,next)=>{
             jobs: data,
         })
     })
-    // res.status(200).json({
-    //     message:"done",
-    // })
 });
 
 router.get("/testget", (req, res, next) => {
     Job.find({
         filled: false,
     })
-        // .populate(applicants)
         .sort({
             createdAt: -1
         })
 
-        // .select('jobId name title createdAt createdBy activeStatus primaryResponsibilities Requirements description location jobType url minimumrate maximumrate minimumsalary minimumsalary companyDetails companyName Website companyDescription')
-        // .exec()
         .then(doc => {
             if (doc) {
                 const result = {
@@ -132,8 +124,7 @@ router.get("/testget", (req, res, next) => {
 });
 
 router.get("/",(req,res,next)=>{
-    // let sortBy = "createdAt";
-    // let filterBy = true;
+
     let jb = ['freelance','part time','full time','internship','contract'];
     let skipNum  = 0;
     let sortQuery = {'createdAt':-1} 
@@ -143,7 +134,6 @@ router.get("/",(req,res,next)=>{
             sortQuery[req.body.sort] = req.body.sortDir || -1;
         }
     }
-    // let jobs ;
 
     Job.find({
         filled:false,
@@ -159,7 +149,6 @@ router.get("/",(req,res,next)=>{
     .skip( skipNum  )
     .limit(25)
     .then(jobs=>{
-        // jobs = result;
 
         Job.aggregate([
             {
@@ -170,10 +159,8 @@ router.get("/",(req,res,next)=>{
                     },
                 }
             },
-            // { $unwind: "$jobType" },
             {
                 $group: {
-                    // type: {$toLower: '$jobType'},
                     _id:"$jobType",
                     count: { $sum: 1 }
                 }
@@ -208,7 +195,6 @@ router.post("/search/",isApplicant,(req,res,next)=>{
         skipNum = (Number(req.body.page)-1)*25 > 0 ? (Number(req.body.page)-1)*25 : 0 ;
     }
     catch(err){
-        // console.error("page number invalid");
     }
     if((req.body.jobType || []).length){
         jb = req.body.jobType.split(",");
@@ -222,7 +208,6 @@ router.post("/search/",isApplicant,(req,res,next)=>{
     }
     let keyword= req.body.keyword || "";
     let location= req.body.location || "";
-    // let jobs ;
 
     Job.find({
         $or:[
@@ -258,7 +243,6 @@ router.post("/search/",isApplicant,(req,res,next)=>{
     .skip( skipNum  )
     .limit(JOB_LIMIT)
     .then(jobs=>{
-        // jobs = result;
 
         Job.aggregate([
             {
@@ -289,10 +273,8 @@ router.post("/search/",isApplicant,(req,res,next)=>{
                     }
                 }
             },
-            // { $unwind: "$jobType" },
             {
                 $group: {
-                    // type: {$toLower: '$jobType'},
                     _id:"$jobType",
                     count: { $sum: 1 }
                 }
@@ -318,20 +300,9 @@ router.post("/search/",isApplicant,(req,res,next)=>{
 
 
 router.post("/", isRecruiter, (req, res, next) => {
-    //router.post('/', checkAuth, uploads.single('productImage'), (req, res, next) => {
-    // const product = {
-    //     name : req.body.name,
-    //     price : req.body.price
-    // };
-    // res.header("Access-Control-Allow-Origin", "*");
-    console.log(req.body);
-
-    console.log("----");
 
     const job = new Job({
         _id: new mongoose.Types.ObjectId(),
-        // _id: new mongoose.Types.ObjectId(),
-        //        jobId: docs._id,
         name: req.body.name,
         title: req.body.title,
         createdAt:new Date(),
@@ -356,10 +327,7 @@ router.post("/", isRecruiter, (req, res, next) => {
         companyDescription: req.body.companyDescription,
         closeDate: req.body.closeDate,
         salaryType: req.body.salaryType || 'YEARLY',
-        // createdBy: req.body.createdBy,
-        // name: req.body.name,
-        // price: req.body.price,
-        // productImage: req.file.path
+
     });
     job.save()
         .then(result => {
@@ -368,11 +336,9 @@ router.post("/", isRecruiter, (req, res, next) => {
                 message: "Created Job",
                 createdJob: {
                     _id: result._id,
-                    // _id: new mongoose.Types.ObjectId(),
-                    //        jobId: docs._id,
+
                     name: result.name,
                     title: result.title,
-                    //        createdAt: req.body.createdAt,
                     createdAt: Date.now(),
                     createdBy: result.createdBy,
                     activeStatus: true, //result.activeStatus,
@@ -392,9 +358,6 @@ router.post("/", isRecruiter, (req, res, next) => {
                     companyName: result.companyName,
                     Website: result.Website,
                     companyDescription: result.companyDescription,
-                    // name: result.name,
-                    // price: result.price,
-                    // ID: result._id,
                     request: {
                         type: "GET",
                         url: "http://"+SERVER_IP+"/job/" + result._id
@@ -413,8 +376,6 @@ router.post("/", isRecruiter, (req, res, next) => {
 
 router.post("/update",isRecruiter,(req,res,next)=>{
 
-    console.log(req.body);
-    // console.log(req.userData);
     Job.findOneAndUpdate({'_id':req.body.jobID,createdBy:req.userData.userId},
         {
             $set:{
@@ -456,10 +417,7 @@ router.post("/update",isRecruiter,(req,res,next)=>{
 
 
 router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
-    // console.log(req);
-    // console.log(req.userData);
-    // let user;
-    console.log(req.body);
+
     const file = req.file;
 
     if(! req.body.jobId){
@@ -560,12 +518,7 @@ router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
 router.get("/:_id", async (req, res, next) => {
 
     Job.findById(req.params._id)
-        // .populate("profile")
-        // .exec()
-        // .limit(5)
-        // .sort({
-        //     age: -1
-        // });
+
         .then(doc => {
             console.log(doc);
             if (doc) {
@@ -589,43 +542,10 @@ router.get("/:_id", async (req, res, next) => {
                 error: err
             });
         });
-    // const job2 = await Job.find({
-    //     _id: req.body._id
-    // })
-    // console.log(job2);
-    // res.json(job2);
-
-    // Job.findById(req.params.jobId)
-    //     //    .select('name title createdAt createdBy activeStatus primaryResponsibilities Requirements description location jobType url minimumrate maximumrate minimumsalary minimumsalary companyDetails companyName Website companyDescription')
-    //     .exec().then(doc => {
-    //         console.log(doc);
-    //         if (doc) {
-    //             res.status(200).json({
-    //                 job: doc,
-    //                 request: {
-    //                     type: 'GET',
-    //                     description: 'Get All Jobs',
-    //                     url: 'http://"+SERVER_IP+"/job'
-    //                 }
-    //             });
-
-    //         } else {
-    //             res.status(404).json({
-    //                 message: 'No valid entry found for jobId'
-    //             });
-    //         }
-    //     }).catch(err => {
-    //         console.log(err);
-    //         res.status(500).json({
-    //             error: err
-    //         });
-    //     });
 });
 
 router.get("/location/:location", async (req, res, next) => {
-    //   const ID = req.params.jobId;
-    //  console.log(ID);
-    //   const job1 = await Job.findById(req.params.jobId)
+
     Job.find({
             location: req.params.location
         })
@@ -652,9 +572,7 @@ router.get("/location/:location", async (req, res, next) => {
 });
 
 router.get("/createdBy/:createdBy", async (req, res, next) => {
-    //   const ID = req.params.jobId;
-    //  console.log(ID);
-    //   const job1 = await Job.findById(req.params.jobId)
+
     Job.find({
             createdBy: req.params.createdBy
         })
@@ -762,15 +680,9 @@ router.post("/searchResult", async (req, res, next) => {
     Job.find({
             $or: [{
                     title: req.body.title
-                    //   {
-                    //     $regex: new RegExp("^" + title.toLowerCase(), "i")
-                    //   }
                 },
                 {
                     location: req.body.location
-                    //   {
-                    //     $regex: new RegExp("^" + location.toLowerCase(), "i")
-                    //   }
                 }
             ]
         })
@@ -814,16 +726,6 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
         })
         return;
     }
-    // JobApplication.findById(req.body.applicationId).then(applicant=>{
-    //     console.log(applicant);
-    //     res.status(200).json({
-    //         message:'nonsense',
-    //     });
-    // })
-
-    // JobApplication.find({"_id":req.body.applicationId}).then(doc=>{
-    //     console.log(doc);
-    // })
 
     JobApplication.findById(req.body.applicationId,function(err,doc){if(err){
         return err;
