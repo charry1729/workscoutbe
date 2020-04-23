@@ -17,8 +17,8 @@ app.use(cors()); // Using Cors policy for CROSS ORIGIN CALLS
 app.use(compression()); // Compressing responses to reduce data transfer to clients
 
 
-mongoose.connect('mongodb://localhost:27017/testdb');
-// mongoose.connect('mongodb://localhost:27017/stag?authSource=admin');
+// mongoose.connect('mongodb://localhost:27017/testdb');
+mongoose.connect('mongodb://localhost:27017/stag?authSource=admin');
 
 
 app.use(morgan('dev'));
