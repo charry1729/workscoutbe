@@ -9,7 +9,8 @@ const User = require('../models/users');
 
 const multer = require("multer");
 
-const SERVER_IP = "34.224.1.240:3001";
+// const SERVER_IP = "34.224.1.240:3001";
+const SERVER_IP = "http://3.229.152.95:3001";
 // const SERVER_IP = "localhost:3001";
 
 
