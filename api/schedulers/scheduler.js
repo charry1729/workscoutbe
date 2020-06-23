@@ -21,10 +21,10 @@ CRON hierarchy with valid ranges
 
 let i=1;
 
-schedule.scheduleJob("test",'* * * * *', function(){
-    console.log('The answer to life, the universe, and everything! '+i);
-    i++;
-  });
+// schedule.scheduleJob("test",'* * * * *', function(){
+//     console.log('The answer to life, the universe, and everything! '+i);
+//     i++;
+//   });
 
 
 // Daily scheduler to check for expired jobs
