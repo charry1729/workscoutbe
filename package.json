@@ -26,11 +26,13 @@
     "helmet": "^3.21.2",
     "jquery": "^3.4.1",
     "jsonwebtoken": "^8.2.1",
+    "moment": "^2.25.3",
     "mongoose": "^5.1.2",
     "morgan": "^1.9.0",
     "multer": "^1.3.0",
     "node-schedule": "^1.3.2",
     "nodemon": "^1.19.4",
+    "stripe": "^8.55.0",
     "xss-clean": "^0.1.1"
   }
 }

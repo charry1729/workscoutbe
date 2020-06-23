@@ -9,8 +9,8 @@ var crypto = require('crypto');
 const profileRoutes = require('./api/routes/profile');
 const jobRoutes = require('./api/routes/jobs');
 const userRoutes = require('./api/routes/users');
-
 const User = require('./api/models/users');
+const paymentRoutes = require('./api/routes/payment')
 
 app.use(cors()); // Using Cors policy for CROSS ORIGIN CALLS
 
@@ -90,10 +90,10 @@ app.post('/paySuccess', function(req, res){
     var expirationperiod=0;
     var downloadlimit=0;
     if(productinfo == "startup"){
-        downloadlimit=25;
+        downloadlimit=30;
         expirationperiod=3;
     }else if(productinfo == "company"){
-        downloadlimit=100;
+        downloadlimit=120;
         expirationperiod=6;
     }else if(productinfo == "enterprise"){
         downloadlimit=200;
@@ -234,6 +234,7 @@ app.use((req, res, next) => {
 app.use('/user', userRoutes);
 app.use('/jobs', jobRoutes);
 app.use('/profile', profileRoutes);
+app.use('',paymentRoutes);
 
 
 app.use((req, res, next) => {

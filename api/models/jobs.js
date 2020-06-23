@@ -22,7 +22,7 @@ const jobSchema = mongoose.Schema({
         type: Date
     },
     closeDate:{
-        type: String
+        type: Date
     },
     experience:{
         type: String,

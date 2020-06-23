@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const checkAuth = require("../middleware/check-auth");
-// const schedule = require("node-schedule");
+const schedule = require("node-schedule");
 
 const User = require('../models/users');
 const Profile = require("../models/profile")
@@ -13,13 +13,13 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
 const FTID = process.env.FORGET_PASSWORD_TEMPLATE; //Forgot password email template
 
-// let i=1;
-// var j = schedule.scheduleJob('* * * * *', function(){
+let i=1;
+// var j = schedule.scheduleJob("test",'* * * * *', function(){
 //     console.log('The answer to life, the universe, and everything! '+i);
 //     i++;
 //   });
 
-const SERVER_IP_WO_PORT = "3.229.152.95";
+const SERVER_IP_WO_PORT = "34.224.1.240";
 // const SERVER_IP_WO_PORT = "localhost";
 
 
@@ -385,6 +385,7 @@ router.post('/login', (req, res, next) => {
                             userId: user._id,
                             verified:user.verified,
                             resumedownloadlimit: user.resumedownloadlimit,
+                            name:user.name
                         },
                         process.env.JWT_KEY, {
                             expiresIn: "10d"
@@ -544,6 +545,26 @@ router.post("/reset/password",(req,res,next)=>{
         })
     })
 
+})
+
+router.get('/getInfo',checkAuth,(req,res)=>{
+    User.findOne({
+        _id:req.userData.userId
+    }).then(user=>{
+        console.log(user);
+        if(user){
+            res.status(200).send({
+                message:"Success",
+                user:{
+                    resumedownloadlimit: user.resumedownloadlimit,
+                }
+            })
+        }else{
+            res.status(400).send({
+                message:"User not found",
+            })
+        }
+    })
 })
 
 module.exports = router;

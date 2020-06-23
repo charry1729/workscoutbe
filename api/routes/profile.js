@@ -9,7 +9,7 @@ const User = require('../models/users');
 
 const multer = require("multer");
 
-const SERVER_IP = "3.229.152.95:3001";
+const SERVER_IP = "34.224.1.240:3001";
 // const SERVER_IP = "localhost:3001";
 
 
@@ -248,7 +248,8 @@ router.get("/:userid/profile",(req,res,next)=>{
 });
 
 
-router.get('/:userid', (req, res, next) => {
+router.get('/:userid', checkAuth,(req, res, next) => {
+    console.log(req.userData);
  Profile.findOne({user_id:req.params.userid})
         .populate('jobsApplied','jobId')
         .then(result=>{
