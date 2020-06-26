@@ -19,8 +19,8 @@ let i=1;
 //     i++;
 //   });
 
-// const SERVER_IP_WO_PORT = "34.224.1.240";
-const SERVER_IP_WO_PORT = "3.229.152.95"
+const SERVER_IP_WO_PORT = "34.224.1.240";
+// const SERVER_IP_WO_PORT = "3.229.152.95"
 // const SERVER_IP_WO_PORT = "localhost";
 
 
