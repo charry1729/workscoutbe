@@ -497,14 +497,14 @@ router.post('/resume/:id',isRecruiter,(req,res,next)=>{
     })
 });
 
-router.get('/all',(req,res)=>{
+router.get('/all/all',(req,res)=>{
     Profile.find({})
     .then(profiles=>{
         res.send({
             data:profiles
         })
     })
-})
+});
 
 router.post("/resumesNew",(req,res,next)=>{
     console.log(req.body);
