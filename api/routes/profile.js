@@ -13,14 +13,22 @@ const SERVER_IP = "34.224.1.240:3001";
 // const SERVER_IP = "http://3.229.152.95:3001";
 // const SERVER_IP = "localhost:3001";
 
-
+const randomName = function(length){
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "./uploads/");
     },
     filename: function (req, file, cb) {
-        cb(null, new Date().toISOString() + file.originalname);
+        cb(null, new Date().toISOString() + randomName(5));
     }
 });
 
@@ -29,7 +37,7 @@ const storage2 = multer.diskStorage({
         cb(null, "./uploads/");
     },
     filename: function (req, file, cb) {
-        cb(null, new Date().toISOString() + file.originalname);
+        cb(null, new Date().toISOString() + randomName(5));
     }
 });
 
@@ -489,6 +497,15 @@ router.post('/resume/:id',isRecruiter,(req,res,next)=>{
     })
 });
 
+router.get('/all',(req,res)=>{
+    Profile.find({})
+    .then(profiles=>{
+        res.send({
+            data:profiles
+        })
+    })
+})
+
 router.post("/resumesNew",(req,res,next)=>{
     console.log(req.body);
     let selectFilter={'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0};
@@ -596,4 +613,4 @@ router.delete('/:_id', (req, res, next) => {
 
 });
 
-module.exports = router;
+module.exports.routes = router;

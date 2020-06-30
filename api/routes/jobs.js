@@ -22,12 +22,22 @@ const SERVER_IP = "34.224.1.240:3001";
 const APPLICANT_LIMIT = 10;
 const JOB_LIMIT = 25;
 
+const randomName = function(length){
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "./uploads/");
     },
     filename: function (req, file, cb) {
-        cb(null, new Date().toISOString() + file.originalname);
+        cb(null, new Date().toISOString() + randomName(5));
     }
 });
 
@@ -1020,4 +1030,4 @@ router.post("/testing",isRecruiter,(req,res,next)=>{
     });
 });
 
-module.exports = router;
+module.exports.routes = router;

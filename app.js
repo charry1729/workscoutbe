@@ -11,7 +11,8 @@ const jobRoutes = require('./api/routes/jobs');
 const userRoutes = require('./api/routes/users');
 const User = require('./api/models/users');
 const paymentRoutes = require('./api/routes/payment')
-
+const organisationRoutes = require('./api/routes/organisation');
+const missingFeatureRoutes = require('./api/features/missingFeatures');
 app.use(cors()); // Using Cors policy for CROSS ORIGIN CALLS
 
 app.use(compression()); // Compressing responses to reduce data transfer to clients
@@ -64,157 +65,6 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 
-app.post('/paySuccess', function(req, res){
-    // console.log("paysucess"+ req);
-    // console.log(req.body);
-    var key = req.body.key;
-    var salt = req.body.salt;
-    var txnid = req.body.txnid;
-    var amount = req.body.amount;
-    var productinfo = req.body.productinfo;
-    var firstname = req.body.firstname;
-    var email = req.body.email;
-    var udf5 = req.body.udf5;
-    var mihpayid = req.body.mihpayid;
-    var status = req.body.status;
-    var resphash = req.body.hash;
-    
-    var keyString       =   key+'|'+txnid+'|'+amount+'|'+productinfo+'|'+firstname+'|'+email+'|||||'+udf5+'|||||';
-    var keyArray        =   keyString.split('|');
-    var reverseKeyArray =   keyArray.reverse();
-    var reverseKeyString=   salt+'|'+status+'|'+reverseKeyArray.join('|');
-    
-    var cryp = crypto.createHash('sha512'); 
-    cryp.update(reverseKeyString);
-    var calchash = cryp.digest('hex');
-    var expirationperiod=0;
-    var downloadlimit=0;
-    if(productinfo == "startup"){
-        downloadlimit=30;
-        expirationperiod=3;
-    }else if(productinfo == "company"){
-        downloadlimit=120;
-        expirationperiod=6;
-    }else if(productinfo == "enterprise"){
-        downloadlimit=200;
-        expirationperiod=12;
-    }
-    var msg = 'Payment failed for Hash not verified...';
-    if(calchash == resphash)
-        msg = 'Transaction Successful and Hash Verified...';
-    console.log("email", String(req.body.email).trim());
-        User.findOne({
-            email: String(req.body.email).trim()
-        })
-        .exec()
-        .then(user => {
-            console.log("userupdate", user);
-            console.log("userupdatecount", user.resumedownloadlimit);
-var CurrentDate = new Date();
-console.log("Current date:", CurrentDate);
-CurrentDate.setMonth(CurrentDate.getMonth() + expirationperiod);
-console.log("Date after " + expirationperiod + " months:", CurrentDate);
-            
-                console.log("update" + user.resumedownloadlimit + downloadlimit + " expiration:", CurrentDate);
-                User.update({
-                    email: String(req.body.email).trim()
-                }, {
-                    $set: {resumedownloadlimit: user.resumedownloadlimit + downloadlimit,expirationdate:CurrentDate}
-                })
-                .exec()
-                .then(result => {
-                    console.log(result);
-                    result.resumedownloadlimit = user.resumedownloadlimit + downloadlimit;
-                 res.status(200).json(result);
-                })
-                .catch(err => {
-                    console.log(err);
-                    res.status(500).json({
-                        error: err
-                    });
-                });
-            
-           
-        })
-        .catch(err => {
-
-            res.status(500).json({
-                error: err
-            });
-        });
-});
-
-
-
-
-app.post('/reducedownloadcount', function(req, res){
-    User.update({
-        email: String(req.body.email).trim()
-    }, {
-        $set: {resumedownloadlimit: user.resumedownloadlimit - 1}
-    })
-    .exec()
-    .then(result => {
-        console.log(result);
-        res.status(200).json(result);
-    })
-    .catch(err => {
-        console.log(err);
-        res.status(500).json({
-            error: err
-        });
-    });
-
-});
-
-app.post('/checkplanstatus', function(req, res){
-    console.log("checkpal"+ req.body);
-    User.findOne({
-        email: String(req.body.email).trim()
-    })
-    .exec()
-    .then(user => {
-        var isActive;
-
-         console.log("userlimit", user);
-        if(user.resumedownloadlimit > 0){
-            isActive=true;
-        }
-        else{
-            isActive=false;
-        }
-        var CurrentDate = new Date();
-        var expirationdate =new Date(user.expirationdate);
-        timeDifference = Math.abs(expirationdate.getTime() - CurrentDate.getTime());
-
-        console.log(timeDifference);    
-        
-        
-        let differentDays = Math.ceil(timeDifference / (1000 * 3600 * 24));
-        
-        console.log("diffday" +differentDays);
-    
-        
-        if((user.resumedownloadlimit > 0 ) && (differentDays >0)){
-            isActive=true;
-        }else
-        {
-            isActive =false
-        }
-        console.log("isactive" + String(isActive));
-
-        res.status(200).json(isActive);
-       
-    })
-    .catch(err => {
-
-        res.status(500).json({
-            error: err
-        });
-    });
-
-});
-
 app.use(bodyParser.urlencoded({
     extended: false
 }));
@@ -231,11 +81,12 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/user', userRoutes);
-app.use('/jobs', jobRoutes);
-app.use('/profile', profileRoutes);
-app.use('',paymentRoutes);
-
+app.use('/user', userRoutes.routes);
+app.use('/jobs', jobRoutes.routes);
+app.use('/profile', profileRoutes.routes);
+app.use('',paymentRoutes.routes);
+app.use('/organisation',organisationRoutes.routes);
+app.use('/missingFeatures',missingFeatureRoutes.routes);
 
 app.use((req, res, next) => {
     const error = new Error('Not Found');

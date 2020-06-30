@@ -2,8 +2,8 @@ const schedule = require("node-schedule");
 const User = require('../models/users');
 const Profile = require("../models/profile");
 const Job = require("../models/jobs");
-const JobApplication = require("../models/jobApplications")
-
+const JobApplication = require("../models/jobApplications");
+const Organisation = require("../models/organisation");
 
 `
 CRON hierarchy with valid ranges
@@ -29,21 +29,20 @@ let i=1;
 
 // Daily scheduler to check for expired jobs
 
-schedule.scheduleJob('expireJob','1 0 * * *',function(){
+// schedule.scheduleJob('expireJob','1 0 * * *',function(){
     
-})
+// })
 
 
 // Montly scheduler to add free resumedownloadlimit to recruiter
 
 schedule.scheduleJob('addFreeLimit','1 0 1 * *',function(){
-    User.updateMany(
+    Organisation.updateMany(
         {
-            userType:'recruiter'
         },
         {
-            $inc:{
-                resumedownloadlimit : 3,
+            $set:{
+                resumeDownloadLimit : 3,
             }
         },
         function(err,doc){

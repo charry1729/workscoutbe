@@ -163,4 +163,4 @@ router.post('/payment/status/:intentId',isRecruiter,async (req,res)=>{
         }
     )
 })
-module.exports = router;
+module.exports.routes = router;

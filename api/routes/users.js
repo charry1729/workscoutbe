@@ -5,7 +5,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const checkAuth = require("../middleware/check-auth");
 const schedule = require("node-schedule");
-
+const Organisation = require('../models/organisation');
+const organisationController = require('./organisation');
 const User = require('../models/users');
 const Profile = require("../models/profile")
 const sgMail = require('@sendgrid/mail');
@@ -235,29 +236,42 @@ router.post("/verify",(req,res,next)=>{
                     message:'Server error! Try again later',
                 })
             }
-            // console.log(hash);
 
             if(result){
-                // if(hash == req.body.hash){
-                    User.findOneAndUpdate({
-                        _id:req.body.id,
-                    },{
-                        $set:{
-                            verified: true,
+                let tasks = [];
+
+                tasks[0] = User.findOneAndUpdate({
+                    _id:req.body.id,
+                },{
+                    $set:{
+                        verified: true,
+                    }
+                },function(err,doc){
+                    if(err){
+                        return {
+                            message:'Server error! Try again later',
                         }
-                    },function(err,doc){
-                        if(err){
-                            return res.status(500).json({
-                                message:'Server error! Try again later',
-                            })
+                    }
+                    if(doc){
+                        return {
+                            message:"Verification Successful",
                         }
-                        if(doc){
-                            return res.status(200).json({
-                                message:"Verification Successful",
-                            })
-                        }
+                    }
+                })
+                if(user.userType == 'recruiter'){
+                    tasks[1] = organisationController.createNewOrganisation(user.email);
+                }
+                Promise.all(tasks)
+                .then(results=>{
+                    res.send({
+                        message: results[0].message
                     })
-                // }
+                })
+                .catch(err=>{
+                    res.status(400).send({
+                        message:"An error occured please try again later!!"
+                    })
+                })
             }
         })
     }).catch(err=>{
@@ -568,4 +582,4 @@ router.get('/getInfo',checkAuth,(req,res)=>{
     })
 })
 
-module.exports = router;
+module.exports.routes = router;
