@@ -343,7 +343,7 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
         }
         let expFilter = [{
             experience:{
-                $gt:0,
+                $gt:-1,
             }
         }]
 
@@ -398,7 +398,7 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
         if(expFilter.length==0){
             expFilter = [{
                 experience:{
-                    $gt:0,
+                    $gt:-1,
                 }
             }]
         }

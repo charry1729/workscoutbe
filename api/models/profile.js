@@ -9,10 +9,12 @@ const profileSchema = mongoose.Schema({
         type: String
     },
     region: {
-        type: String
+        type: String,
+        default:''
     },
     professionalTitle: {
-        type: String
+        type: String,
+        default:''
     },
     category: {
         type: String
