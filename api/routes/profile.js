@@ -505,6 +505,22 @@ router.get('/all/all',(req,res)=>{
         })
     })
 });
+router.get('/set/data',(req,res)=>{
+    Profile.updateMany({
+        type:{
+            $ne:"recuiter",
+        }
+    },{
+        $set:{
+            professionalTitle:''
+        }
+    })
+    .then(profiles=>{
+        res.send({
+            data:profiles
+        })
+    })
+});
 
 router.post("/resumesNew",(req,res,next)=>{
     console.log(req.body);
