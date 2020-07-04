@@ -7,8 +7,8 @@ module.exports = (req,res,next)=>{
     req.userData = decoded;
     next();
   }  catch(error){
-        return res.status(401).json({
-            message : 'Auth Failed'
+        return res.status(440).json({
+            message : 'Session Expired'
         });
   }
     

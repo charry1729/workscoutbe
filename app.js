@@ -14,7 +14,7 @@ const paymentRoutes = require('./api/routes/payment')
 const organisationRoutes = require('./api/routes/organisation');
 const missingFeatureRoutes = require('./api/features/missingFeatures');
 app.use(cors()); // Using Cors policy for CROSS ORIGIN CALLS
-
+app.options('*', cors())
 app.use(compression()); // Compressing responses to reduce data transfer to clients
 
 

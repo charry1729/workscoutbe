@@ -10,7 +10,8 @@ const Profile = require("../models/profile")
 const User = require("../models/users")
 const JobApplication = require("../models/jobApplications")
 const fs = require('fs')
-const { promisify } = require('util')
+const { promisify } = require('util');
+const organisationController = require('../routes/organisation');
 
 const unlinkAsync = promisify(fs.unlink)
 
@@ -37,7 +38,9 @@ const storage = multer.diskStorage({
         cb(null, "./uploads/");
     },
     filename: function (req, file, cb) {
-        cb(null, new Date().toISOString() + randomName(5));
+        let type = file.originalname.split('.');
+        type ='.'+type[type.length-1];
+        cb(null, new Date().toISOString() + randomName(5)+type);
     }
 });
 
@@ -136,7 +139,7 @@ router.get("/testget", (req, res, next) => {
 
 router.get("/",(req,res,next)=>{
 
-    let jb = ['freelance','part time','full time','internship','contract'];
+    // let jb = ['freelance','part time','full time','internship','contract'];
     let skipNum  = 0;
     let sortQuery = {'createdAt':-1} 
     if(req.body.sort){
@@ -148,9 +151,6 @@ router.get("/",(req,res,next)=>{
 
     Job.find({
         filled:false,
-        jobType:{
-            $in: jb,
-        },
     })
     .select({
         applicants:0,
@@ -165,9 +165,6 @@ router.get("/",(req,res,next)=>{
             {
                 $match: {
                     filled:false,
-                    jobType:{
-                        $in: jb,
-                    },
                 }
             },
             {
@@ -197,7 +194,9 @@ router.get("/",(req,res,next)=>{
 });
 
 router.post("/search/",isApplicant,(req,res,next)=>{
-    let jb = ['freelance','part time','full time','internship','contract'];
+    // let jb = [/freelance/,/part time/,/full time/,/internship','contract'];
+    // let jb = [];
+    let jb = [/./i];
     let skipNum  = 0;
     try{
         if(isNaN(Number(req.body.page))){
@@ -209,6 +208,9 @@ router.post("/search/",isApplicant,(req,res,next)=>{
     }
     if((req.body.jobType || []).length){
         jb = req.body.jobType.split(",");
+        for(let i=0;i<jb.length;i++){
+            jb[i] = RegExp(jb[i]);
+        }
     }
     let sortQuery = {'createdAt':-1} 
     if(req.body.sort){
@@ -240,7 +242,7 @@ router.post("/search/",isApplicant,(req,res,next)=>{
         ],
         filled:false,
         jobType:{
-            $in: jb,
+            $in:jb
         },
         location:{
             $regex: new RegExp(location, "i")
@@ -391,22 +393,27 @@ router.post("/update",isRecruiter,(req,res,next)=>{
         {
             $set:{
                 name: req.body.name,
-                email: req.body.email,
                 title: req.body.title,
+                activeStatus: req.body.activeStatus,
                 primaryResponsibilities: req.body.primaryResponsibilities,
                 requirements: req.body.requirements,
-                description:req.body.description,
+                description: req.body.description,
                 location: req.body.location,
                 jobType: req.body.jobType,
                 url: req.body.url,
+                email:req.body.email,
+                experience: req.body.experience,
+                minimumrate: req.body.minimumrate,
+                maximumrate: req.body.maximumrate,
                 minimumsalary: req.body.minimumsalary,
                 maximumsalary: req.body.maximumsalary,
-                experience: req.body.experience,
-                closeDate: req.body.closeDate,
-                salaryType: req.body.salaryType,
+                companyDetails: req.body.companyDetails,
+                currencysymbol: req.body.currencysymbol,
                 companyName: req.body.companyName,
                 Website: req.body.Website,
                 companyDescription: req.body.companyDescription,
+                closeDate: req.body.closeDate,
+                salaryType: req.body.salaryType || 'YEARLY',
             }
         },
         function(err,doc){
@@ -427,7 +434,7 @@ router.post("/update",isRecruiter,(req,res,next)=>{
 });
 
 
-router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
+router.post("/apply", uploads.single('resume'), isApplicant, (req, res, next) => {
 
     const file = req.file;
 
@@ -450,15 +457,16 @@ router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
 
     Job.findById(req.body.jobId)
     .then(job=>{
+        if(!job){
+            return res.status(404).send({
+                message:"Invalid Job"
+            })
+        }
         Profile.findById(req.body.applicantProfile)
         .then(profile=>{
             JobApplication.findOne({'applicantProfile':req.body.applicantProfile,'jobId':req.body.jobId})
             .then(found=>{
-                console.log(found);
                 if(found){
-                    console.log(req.file.path);
-
-                    unlinkAsync(req.file.path);
                     res.status(200).json({
                         message:"Already Applied",
                     })
@@ -474,46 +482,42 @@ router.post("/apply", uploads.single('resume'), checkAuth, (req, res, next) => {
                                     appliedOn: new Date(),
                                 });
                                 new_jobApplication.save()
-                                                    .then(jobapp=>{
-                                                        console.log("JOb app is \n");
-                                                        console.log(jobapp);
-                                                        return Profile.findOneAndUpdate({
-                                                            '_id':req.body.applicantProfile
-                                                        },{
-                                                            '$addToSet':{
-                                                                jobsApplied: jobapp,
-                                                            }
-                                                        }).then((prof)=>{
-                                                            console.log("Profile");
-                                                            console.log(prof);
-                                                            return Job.findOneAndUpdate(
-                                                            {
-                                                                '_id':req.body.jobId
-                                                            },
-                                                            {
-                                                                '$addToSet':{
-                                                                    applicants:jobapp,
-                                                                }
-                                                            }).then((jb)=>{
-                                                                console.log(jb);
-                                                            })
-                                                        })
-                                                    })
-                                                    .then(()=>{
-                                                        res.status(200).json({
-                                                            message:"Job applied",
-                                                        })
-                                                    })
-                                                    .catch(err=>{
-                                                        res.status(500).json({
-                                                            message:'Error while applying',
-                                                            error : err,
-                                                        })
-                                                    })
+                                    .then(jobapp=>{
+                                        let promises = [];
+                                        promises[0] =  Profile.findOneAndUpdate({
+                                            '_id':req.body.applicantProfile
+                                        },{
+                                            '$addToSet':{
+                                                jobsApplied: jobapp,
+                                            }
+                                        })
+                                        promises[1] = Job.findOneAndUpdate(
+                                            {
+                                                '_id':req.body.jobId
+                                            },
+                                            {
+                                                '$addToSet':{
+                                                    applicants:jobapp,
+                                                }
+                                            })
+                                        return Promise.all(promises)   
+                                    })
+                                    .then(()=>{
+                                        res.status(200).json({
+                                            message:"Job applied",
+                                        })
+                                    })
+                                    .catch(err=>{
+                                        res.status(500).json({
+                                            message:'Error while applying',
+                                            error : err,
+                                        })
+                                    })
 
                 }
                 
             }).catch(err=>{
+                console.log(err);
                 res.status(500).json({
                     message:"error occured",
                 })
@@ -639,21 +643,90 @@ router.patch("/:jobId", (req, res, next) => {
 });
 router.delete("/:_id", checkAuth,(req, res, next) => {
     const ID = req.params._id;
-    Job.remove({
-            _id: ID
+    Job.findById(ID)
+    .then(job=>{
+        if(!job){
+            res.status(400).send({
+                message:"Invalid Job",
+            })
+        }
+        return removeJobFromApplicationsAndProfiles(ID)
+        .then(()=>{
+            let applications = job.applicants;
+            return JobApplication.deleteMany({
+                _id:{
+                    $in: applications
+                }
+            }).then(()=>{
+                Job.remove({
+                    _id: ID
+                })
+                .exec()
+                .then(result => {
+                    console.log(result);
+                    res.status(200).json(result);
+                })
+                .catch(err => {
+                    console.log(err);
+                    res.status(500).json({
+                        error: err
+                    });
+                });
+            })
         })
-        .exec()
-        .then(result => {
-            console.log(result);
-            res.status(200).json(result);
-        })
-        .catch(err => {
-            console.log(err);
-            res.status(500).json({
-                error: err
-            });
-        });
+    })
+    
 });
+
+function removeJobFromApplicationsAndProfiles(jobId){
+    if(!jobId) return;
+    return new Promise((resolve,reject)=>{
+        JobApplication.find(
+            {
+                jobId: jobId
+            }
+        )
+        .select({applicantProfile:1})
+        .then(applications=>{
+            if(applications.length==0) return;
+            let profileIds = [],applicationIds=[];
+            applications.forEach(application=>{
+                profileIds.push(application.applicantProfile);
+                applicationIds.push(application._id);
+            })
+
+            return Profile.updateMany({
+                _id:{
+                    $in:profileIds
+                }
+            },{
+                $pull:{
+                    jobsApplied:{
+                        $in:applicationIds
+                    }
+                }
+            })
+            .then(profiles=>{
+                resolve(profiles);
+            })
+        })
+        .then(()=>{
+            resolve();
+        })
+        .catch(err=>{
+            reject(err);
+        })
+    })
+}
+
+router.get('/:id/profiles',(req,res)=>{
+    let jobid = req.params.id;
+    console.log(jobid);
+    removeJobFromApplicationsAndProfiles(jobid)
+    .then(data=>{
+        res.send(data)
+    })
+})
 
 router.post("/markFilled",isRecruiter,(req,res,next)=>{
     console.log({createdBy:req.userData.userId,_id:req.body.jobID});
@@ -677,9 +750,26 @@ router.post("/markFilled",isRecruiter,(req,res,next)=>{
             })
         }
         else{
-            res.status(200).json({
-                message:"Marked as Filled",
+            removeJobFromApplicationsAndProfiles(req.body.jobID)
+            .then(()=>{
+                let applications = doc.applicants;
+                return JobApplication.deleteMany({
+                    _id:{
+                        $in: applications
+                    }
+                }).then(()=>{
+                    res.status(200).json({
+                        message:"Marked as Filled",
+                    })
+                })
             })
+            .catch(err=>{
+                res.status(500).send({
+                    message:"Internal Error",
+                    error: err
+                })
+            })
+            
         }
     }
     )
@@ -738,12 +828,13 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
         return;
     }
 
-    JobApplication.findById(req.body.applicationId,function(err,doc){if(err){
-        return err;
-    }
-    console.log(doc);
-    return doc;
-    }).then(application=>{
+    JobApplication.findById(req.body.applicationId,
+        function(err,doc){
+            if(err){
+            return err;
+        }
+        return doc;
+    }).then(async application=>{
         console.log(application)
         if(! application){
             res.status(404).json({
@@ -751,22 +842,18 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
             })
             return
         }
-        User.findOne({
-            email:req.userData.email,
-        }).then(usr=>{
-            if(application.purchased){
-                res.status(200).json({
-                    message:"Already Purchased",
-                    resume:application.resume,
-                })
-                return
-            }
-
-            if(usr.resumedownloadlimit<1){
-                res.status(403).json({
-                    message:"No resumes left download package to get more resumes",
-                })
-            }else{
+        if(application.purchased){
+            res.status(200).json({
+                message:"Already Purchased",
+                resume:application.resume,
+            })
+            return
+        }
+        let orgResumes = await organisationController.getOrgResumes(req.userData.email);
+        let orgResumesCount = orgResumes['resumeDownloadLimit'] || 0;
+        if(orgResumesCount>0){
+            return organisationController.decrementResumeCountToDomain(req.userData.email)
+            .then(data=>{
                 return User.update({
                     email: req.userData.email,
                 }, {
@@ -782,10 +869,11 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
                     },
                     function(err,doc){
                         if(err){
-
+                            res.status(500).send({
+                                message:"Error Occured"
+                            })
+                            return;
                         }
-                        console.log(doc)
-                        // console.log(application);
                         res.status(200).json({
                             message:'purchased',
                             resume: application.resume,
@@ -793,10 +881,50 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
 
                     })
                 })
-
-            }
-        })
-
+            })
+            .catch(err=>{
+                
+            })
+        }else{
+            User.findOne({
+                email:req.userData.email,
+            }).then(usr=>{
+                if(usr.resumedownloadlimit<1){
+                    res.status(403).json({
+                        message:"No resumes left download package to get more resumes",
+                    })
+                }else{
+                    return User.update({
+                        email: req.userData.email,
+                    }, {
+                        $set: {resumedownloadlimit: usr.resumedownloadlimit - 1}
+                    }).then(data=>{
+                        return JobApplication.findOneAndUpdate({
+                            _id:req.body.applicationId,
+                        },
+                        {
+                            $set:{
+                                purchased:true,
+                            }
+                        },
+                        function(err,doc){
+                            if(err){
+                                res.status(500).send({
+                                    message:"Error Occured"
+                                })
+                                return;
+                            }
+                            res.status(200).json({
+                                message:'purchased',
+                                resume: application.resume,
+                            })
+    
+                        })
+                    })
+    
+                }
+            })
+        }
 
     }).catch(err=>{
         res.status(404).json({
@@ -950,16 +1078,33 @@ router.post("/application/delete",isRecruiter,(req,res,next)=>{
     // JobApplication.findById({ // TODO remove from job too
         
     // })
-    JobApplication.remove({
-        _id: appId,
-    }).then(re=>{
-        res.status(200).json({
-            message:"Deleted successfully"
-        })
-    }).catch(err=>{
-        res.status(500).json({
-            message:"An error occured",
-            error: err,
+    JobApplication.findById(appId)
+    .then(application=>{
+        if(!application){
+            return res.status(404).send({
+                message:"Application Not Found"
+            })
+        }
+        let profleId = application.applicantProfile;
+        Profile.update({
+            _id : profleId
+        },{
+            $pull:{
+                jobsApplied: application._id,
+            }
+        }).then(()=>{
+            JobApplication.deleteOne({
+                _id: appId,
+            }).then(re=>{
+                res.status(200).json({
+                    message:"Deleted successfully"
+                })
+            }).catch(err=>{
+                res.status(500).json({
+                    message:"An error occured",
+                    error: err,
+                })
+            })
         })
     })
 });
@@ -1016,7 +1161,7 @@ router.post("/application/edit",isRecruiter,(req,res,next)=>{
 
 
 router.post('/appl',(req,res,next)=>{
-    JobApplication.find().then(appls=>{
+    JobApplication.find({_id:req.body.jobId}).then(appls=>{
         res.status(200).json({
             data:appls,
         })

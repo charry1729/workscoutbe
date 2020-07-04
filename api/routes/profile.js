@@ -6,7 +6,7 @@ const isRecruiter  = require("../middleware/isrecruiter")
 
 const Profile = require('../models/profile');
 const User = require('../models/users');
-
+const organisationController = require('./organisation');
 const multer = require("multer");
 
 const SERVER_IP = "34.224.1.240:3001";
@@ -28,7 +28,9 @@ const storage = multer.diskStorage({
         cb(null, "./uploads/");
     },
     filename: function (req, file, cb) {
-        cb(null, new Date().toISOString() + randomName(5));
+        let type = file.originalname.split('.');
+        type ='.'+type[type.length-1];
+        cb(null, new Date().toISOString() + randomName(5)+type);
     }
 });
 
@@ -37,7 +39,9 @@ const storage2 = multer.diskStorage({
         cb(null, "./uploads/");
     },
     filename: function (req, file, cb) {
-        cb(null, new Date().toISOString() + randomName(5));
+        let type = file.originalname.split('.');
+        type ='.'+type[type.length-1];
+        cb(null, new Date().toISOString() + randomName(5)+type);
     }
 });
 
@@ -261,7 +265,11 @@ router.get('/:userid', checkAuth,(req, res, next) => {
     console.log(req.userData);
  Profile.findOne({user_id:req.params.userid})
         .populate('jobsApplied','jobId')
-        .then(result=>{
+        .then(async result=>{
+            let orgResumes = {};
+            if(req.userData.userType=='recruiter'){
+                orgResumes = await organisationController.getOrgResumes(req.userData.email);
+            }
             res.status(201).json({
                 data: {
                     _id: result._id,
@@ -284,6 +292,9 @@ router.get('/:userid', checkAuth,(req, res, next) => {
                     jobsApplied: result.jobsApplied,
                     image:result.image,
                     videoUrl:result.videoUrl,
+                },
+                domain:{
+                    resumesLeft:orgResumes['resumeDownloadLimit'] || 0,
                 },
                 request: {
                     type: 'GET',
@@ -461,14 +472,29 @@ router.post('/resume/:id',isRecruiter,(req,res,next)=>{
     Profile.findById(req.params.id)
     .then(resume=>{
         User.findById(req.userData.userId)
-        .then(user=>{
-        console.log('Found user');
-
-            if(user.resumedownloadlimit<=0){
-                return res.status(403).json({
-                    message:"Purchase any plan to download resume",
+        .then(async (user)=>{
+            let orgResumes = await organisationController.getOrgResumes(req.userData.email);
+            let orgResumesCount = orgResumes['resumeDownloadLimit'] || 0;
+            if(orgResumesCount>0){
+             console.log(orgResumesCount);
+             organisationController.decrementResumeCountToDomain(req.userData.email)
+             .then(data=>{
+                 console.log('Downloaded from org resumes');
+                res.status(201).json({
+                    message:"Success",
+                    resume:resume.resume,
                 })
-            }
+             }).catch(err=>{
+                res.status(500).json({
+                    message:"Something went wrong",
+                })
+             })
+            }else{
+                if(user.resumedownloadlimit<=0){
+                    return res.status(403).json({
+                        message:"Purchase any plan to download resume",
+                    })
+                }
                 User.findOneAndUpdate(
                 {
                     _id:req.userData.userId
@@ -485,13 +511,18 @@ router.post('/resume/:id',isRecruiter,(req,res,next)=>{
                         })
                     }
                     if(doc){
+                        if(!doc){
+                            return res.send(400).send({
+                                message:"User not found",
+                            })
+                        }
                         res.status(201).json({
                             message:"Success",
                             resume:resume.resume,
                         })
                     }
-                }
-            )
+                })
+            }
         })
         
     })
