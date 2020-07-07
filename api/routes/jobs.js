@@ -11,7 +11,11 @@ const User = require("../models/users")
 const JobApplication = require("../models/jobApplications")
 const fs = require('fs')
 const { promisify } = require('util');
+const util = require('../../util');
 const organisationController = require('../routes/organisation');
+const { debug } = require("console");
+const mail = require('../../mail');
+const { send } = require("@sendgrid/mail");
 
 const unlinkAsync = promisify(fs.unlink)
 
@@ -221,8 +225,7 @@ router.post("/search/",isApplicant,(req,res,next)=>{
     }
     let keyword= req.body.keyword || "";
     let location= req.body.location || "";
-
-    Job.find({
+    let jobQuery = {
         $or:[
             {
                 primaryResponsibilities:{
@@ -242,12 +245,49 @@ router.post("/search/",isApplicant,(req,res,next)=>{
         ],
         filled:false,
         jobType:{
+            $nin:[null,undefined,''],
             $in:jb
         },
         location:{
             $regex: new RegExp(location, "i")
         }
-    })
+    }
+    //Adding Date Filter
+    if(req.body.jobDate){
+        let jdates = req.body.jobDate;
+        let now = new Date();
+        let today = new Date(""+(now.getMonth()+1)+'/'+ now.getDate()+'/' + now.getFullYear());
+        if(jdates=='today'){
+            jobQuery.createdAt={
+                $gt: today
+            }
+        }else if(jdates=='last24hrs'){
+            jobQuery.createdAt={
+                $gt:util.subDays(now,1)
+            }
+        }else if(jdates=='last7days'){
+            jobQuery.createdAt={
+                $gt: util.subDays(now,7)
+            }
+        }else if(jdates=='last15days'){
+            jobQuery.createdAt={
+                $gt: util.subDays(now,15)
+            }
+        }else if(jdates=='last1month'){
+            jobQuery.createdAt={
+                $gt: util.subDays(now,30)
+            }
+        }else if(jdates=='last3months'){
+            jobQuery.createdAt={
+                $gt: util.subDays(now,90)
+            }
+        }else if(jdates=='last6months'){
+            jobQuery.createdAt={
+                $gt: util.subDays(now,180)
+            }
+        }
+    }
+    Job.find(jobQuery)
     .select({
         applicants:0,
         views:0,
@@ -259,32 +299,7 @@ router.post("/search/",isApplicant,(req,res,next)=>{
 
         Job.aggregate([
             {
-                $match: {
-                    $or:[
-                        {
-                            primaryResponsibilities:{
-                                $regex: new RegExp(keyword, "i")
-                            }
-                        },
-                        {
-                            companyName:{
-                                $regex: new RegExp(keyword, "i")
-                            }
-                        },
-                        {
-                            title:{
-                                $regex: new RegExp(keyword, "i")
-                            }
-                        }
-                    ],
-                    filled:false,
-                    jobType:{
-                        $in: jb,
-                    },
-                    location:{
-                        $regex: new RegExp(location, "i")
-                    }
-                }
+                $match: jobQuery
             },
             {
                 $group: {
@@ -453,7 +468,7 @@ router.post("/apply", uploads.single('resume'), isApplicant, (req, res, next) =>
         return;
     }
 
-    var new_jobApplication ;
+    var newJobApplication ;
 
     Job.findById(req.body.jobId)
     .then(job=>{
@@ -471,7 +486,7 @@ router.post("/apply", uploads.single('resume'), isApplicant, (req, res, next) =>
                         message:"Already Applied",
                     })
                 }else{
-                    new_jobApplication = new JobApplication({
+                    newJobApplication = new JobApplication({
                                     _id: new mongoose.Types.ObjectId(),
                                     applicantName:req.body.applicantName,
                                     applicantEmail:req.body.applicantEmail,
@@ -481,7 +496,7 @@ router.post("/apply", uploads.single('resume'), isApplicant, (req, res, next) =>
                                     jobId:job,
                                     appliedOn: new Date(),
                                 });
-                                new_jobApplication.save()
+                                newJobApplication.save()
                                     .then(jobapp=>{
                                         let promises = [];
                                         promises[0] =  Profile.findOneAndUpdate({
@@ -503,6 +518,7 @@ router.post("/apply", uploads.single('resume'), isApplicant, (req, res, next) =>
                                         return Promise.all(promises)   
                                     })
                                     .then(()=>{
+                                        mail.sendJobApplyMails(job,profile);
                                         res.status(200).json({
                                             message:"Job applied",
                                         })

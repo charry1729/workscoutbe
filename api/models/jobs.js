@@ -19,7 +19,8 @@ const jobSchema = mongoose.Schema({
         index:true,
     },
     createdAt: {
-        type: Date
+        type: Date,
+        required:true
     },
     closeDate:{
         type: Date

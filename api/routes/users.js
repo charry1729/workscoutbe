@@ -9,6 +9,7 @@ const Organisation = require('../models/organisation');
 const organisationController = require('./organisation');
 const User = require('../models/users');
 const Profile = require("../models/profile")
+const mail = require("../../mail");
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
@@ -68,26 +69,21 @@ router.post('/sendMail',(req,res,next)=>{
                 console.log(user);
                 console.log("http://"+SERVER_IP_WO_PORT+"/verify.html?id="+user[0].id+"&hash="+hash);
                 console.log("http://"+SERVER_IP_WO_PORT+"/verify.html?id="+user[0]._id+"&hash="+hash)
-                const msg = {
-                    to: req.body.email,
-                    from: 'verify@workscout.com',
-                    templateId: tempID,
-                    dynamic_template_data: {
-                        sample_name:req.body.username,
-                        verify_url:"http://"+SERVER_IP_WO_PORT+"/verify.html?id="+user[0].id+"&hash="+hash,
-                    }
-                  };
-                sgMail.send(msg, (error, result) => {
-                    if (error) {
-                        res.status(500).json({
-                            message:'Error occured try again later',
-                        })
-                    } else {
-                        res.status(201).json({
-                            message: 'Email sent for verification',
-                        });
-                    }
-                  });
+                let body_data = {
+                    sample_name:req.body.username,
+                    verify_url:"http://"+SERVER_IP_WO_PORT+"/verify.html?id="+user[0].id+"&hash="+hash,
+                }
+                mail.verifyEmail(req.body.email,body_data)
+                .then(data=>{
+                    res.status(201).json({
+                        message: 'Email sent for verification',
+                    });
+                })
+                .catch(err=>{
+                    res.status(500).json({
+                        message:'Error occured try again later',
+                    })
+                })
             }
         })
 
@@ -140,30 +136,20 @@ router.post('/signup', (req, res, next) => {
                                         })
                                     }
                                     if(hash){
-                                        const msg = {
-                                            to: email,
-                                            from: 'verify@workscout.com',
-                                            templateId: tempID,
-                                            dynamic_template_data: {
-                                                sample_name:req.body.username,
-                                                verify_url:"http://"+SERVER_IP_WO_PORT+"/verify.html?id="+result.id+"&hash="+hash,
-                                            }
-                                          };
-                                        sgMail.send(msg, (error, result) => {
-                                            if (error) {
-                                                console.log(error);
-                                                res.status(500).json({
-                                                    message:'Error occured try again later',
-                                                })
-                                            } else {
-                                    
-                                                // console.log(result);
-                                                console.log("Successfully sent");
-                                                res.status(201).json({
-                                                    message: 'Email sent for verification',
-                                                });
-                                            }
-                                          });
+                                        let body_data = {
+                                            sample_name:req.body.username,
+                                            verify_url:"http://"+SERVER_IP_WO_PORT+"/verify.html?id="+result.id+"&hash="+hash,
+                                        }
+                                        mail.verifyEmail(email,body_data)
+                                        .then(data=>{
+                                            res.status(201).json({
+                                                message: 'Email sent for verification',
+                                            });
+                                        }).catch(err=>{
+                                            res.status(500).json({
+                                                message:'Error occured try again later',
+                                            })
+                                        })
                                     }
                                 })
                                 const profile = new Profile({
@@ -464,29 +450,21 @@ router.post('/forgot/password',(req,res,next)=>{
                 })
             }
             if(hash){
-                console.log(user);
-                console.log("http://"+SERVER_IP_WO_PORT+"/reset-password.html?id="+user[0].id+"&hash="+hash);
-                console.log("http://"+SERVER_IP_WO_PORT+"/reset-password.html?id="+user[0]._id+"&hash="+hash)
-                const msg = {
-                    to: req.body.email,
-                    from: 'resetpassword@workscout.com',
-                    templateId: FTID,
-                    dynamic_template_data: {
-                        sample_name:user[0].name || 'User',
-                        verify_url:"http://"+SERVER_IP_WO_PORT+"/reset-password.html?id="+user[0].id+"&hash="+hash,
-                    }
-                  };
-                sgMail.send(msg, (error, result) => {
-                    if (error) {
-                        res.status(500).json({
-                            message:'Error occured try again later',
-                        })
-                    } else {
-                        res.status(201).json({
-                            message: 'Reset Password link sent to your email ',
-                        });
-                    }
-                });
+                let body_data ={
+                    sample_name:user[0].name || 'User',
+                    verify_url:"http://"+SERVER_IP_WO_PORT+"/reset-password.html?id="+user[0].id+"&hash="+hash,
+                }
+                mail.forgotPasswordMail(req.body.email,body_data)
+                .then(data=>{
+                    res.status(201).json({
+                        message: 'Reset Password link sent to your email ',
+                    });
+                })
+                .catch(err=>{
+                    res.status(500).json({
+                        message:'Error occured try again later',
+                    })
+                })
             }
         })
 
@@ -582,4 +560,22 @@ router.get('/getInfo',checkAuth,(req,res)=>{
     })
 })
 
+router.get('/setZero/resumes',(req,res)=>{
+    let userId = req.query.userId || 'some';
+    console.log(req.query)
+    console.log(userId);
+    User.findOneAndUpdate({
+        _id:userId,
+    },{
+        $set:{
+            resumedownloadlimit:0,
+        }
+    },function(err,doc){
+        if(err){
+            res.send("Failed")
+        }else{
+            res.send("Done")
+        }
+    })
+})
 module.exports.routes = router;

@@ -413,8 +413,10 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
                 }
             }]
         }
-        User.findById(req.userData.userId).then(user=>{
-            if(user.resumedownloadlimit<1){
+        User.findById(req.userData.userId).then(async user=>{
+            let orgResumes = await organisationController.getOrgResumes(req.userData.email);
+            let totalResumes = user.resumedownloadlimit + orgResumes['resumeDownloadLimit']
+            if(totalResumes<1){
                 selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'professionalTitle':1}
             }
             Profile.aggregate([
