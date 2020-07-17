@@ -19,7 +19,7 @@ app.use(compression()); // Compressing responses to reduce data transfer to clie
 
 
 // mongoose.connect('mongodb://localhost:27017/testdb');
-mongoose.connect('mongodb://localhost:27017/stag2?authSource=admin');
+mongoose.connect('mongodb://localhost:27017/stag?authSource=admin');
 
 
 app.use(morgan('dev'));

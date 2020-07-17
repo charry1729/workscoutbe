@@ -9,13 +9,13 @@ const APPLICANT_APPLIED_TEMPLATE = process.env.APPLICANT_APPLIED_TEMPLATE;
 const RECRUITER_JOB_NOTIFY = process.env.RECRUITER_JOB_NOTIFY;
 
 // Mail Cnfig Tester
-// (function (){
-//     if(SENDGRID_KEY && VERIFY_TEMPLATE && FORGET_PASSWORD_TEMPLATE && APPLICANT_APPLIED_TEMPLATE && RECRUITER_JOB_NOTIFY){
-//         console.log("Mail setup done")
-//     }else{
-//         throw new Error ("Mail Setup Failed");
-//     }
-// })();
+(function (){
+    if(SENDGRID_KEY && VERIFY_TEMPLATE && FORGET_PASSWORD_TEMPLATE && APPLICANT_APPLIED_TEMPLATE && RECRUITER_JOB_NOTIFY){
+        console.log("Mail setup done")
+    }else{
+        throw new Error ("Mail Setup Failed");
+    }
+})();
 
 function verifyEmail(to,body_data){
     return new Promise((succes,fail)=>{
