@@ -11,6 +11,14 @@ const User = require('../models/users');
 const Profile = require("../models/profile")
 const mail = require("../../mail");
 const sgMail = require('@sendgrid/mail');
+const multer = require("multer");
+const excel = require('../excel');
+const http = require('http');
+const url = require('url');
+const DOWNLOAD_DIR = './uploads/';
+const fs = require('fs');
+const { fail } = require("assert");
+
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
 const FTID = process.env.FORGET_PASSWORD_TEMPLATE; //Forgot password email template
@@ -21,10 +29,38 @@ let i=1;
 //     i++;
 //   });
 
-const SERVER_IP_WO_PORT = "34.224.1.240";
+// const SERVER_IP_WO_PORT = "34.224.1.240";
 // const SERVER_IP_WO_PORT = "3.229.152.95"
-// const SERVER_IP_WO_PORT = "localhost";
+const SERVER_IP_WO_PORT = "localhost";
 
+
+const randomName = function(length){
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "./uploads/");
+    },
+    filename: function (req, file, cb) {
+        let type = file.originalname.split('.');
+        type ='.'+type[type.length-1];
+        cb(null, new Date().toISOString() + randomName(10)+type);
+    }
+});
+
+const uploads = multer({
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+});
 
 function ValidateEmail(mail)
 {
@@ -578,4 +614,137 @@ router.get('/setZero/resumes',(req,res)=>{
         }
     })
 })
+
+let importMapper ={
+    'name': 'name',
+    'email':'email',
+    'aboutme': 'aboutMe',
+    'phone' : 'phoneNumber',
+    'expectedpayperhour' : 'salaryperhour',
+    'expectedpayperyear' : 'salaryperyear',
+    'country':'country',
+    'experience(inmonths)':'experience',
+    'jobtype':'category',
+    'location':'region',
+    'resume':'resume',
+    'skills':'skills',
+}
+
+function download(file_url) {
+    return new Promise((done,fail)=>{
+        file_url = encodeURI(file_url)
+        var options = {host: url.parse(file_url).host, port: 80, path: url.parse(file_url).pathname},
+        file_name = url.parse(file_url).pathname.split('/').pop(),
+        file_name = decodeURI(file_name);
+        //Creating the file
+            file = fs.createWriteStream(DOWNLOAD_DIR + file_name, {flags: 'w', encoding: 'binary'});
+
+        console.log('Downloading file from ' + file_url);
+        console.log('\tto ' + file_name);
+        http.get(options, function (res) {
+            res.pipe(file, {end: 'false'});
+            //When the file is complete
+            res.on('end', function () {
+                //Closing the file
+                file.end();
+                console.log('\t\tDownloaded '+ file_name);
+                // callback(DOWNLOAD_DIR + file_name);
+                done(DOWNLOAD_DIR + file_name);
+            });
+        });
+
+        process.on('uncaughtException', function(err) {
+            // console.log('Can t download ' + file_url + '\t(' + err + ')', false);
+            // callback(null);
+            fail();
+        });
+    })
+}
+
+router.post('/import/records', uploads.single('file') ,async (req,res)=>{
+    if(!req.file){
+        return res.status(401).send({
+            message:"Invalid Request"
+        })
+    }
+    let downloadUrl = "http://34.224.1.240/resumes/";
+    let records = excel.parseXL(req.file.path);
+    for(let i in records){
+        let row = records[i];
+        let record = {};
+        for(let k in importMapper){
+            if(row[k]){
+                record[importMapper[k]] = row[k];
+            }
+        }
+        await new Promise((success,failed)=>{
+            User.findOne({
+                email:(record['email'] || '').toLowerCase()
+            }).then(user=>{
+                if(user){
+                    success();
+                    return;
+                }
+                let password = record['name'].toLowerCase().replace(/ /g,'') + 123;
+                bcrypt.hash(password,10, (err,hash)=>{
+                    if (err) {
+                        failed()
+                    } else {
+                        let user = new User({
+                            _id: new mongoose.Types.ObjectId(),
+                            email: record['email'].toLowerCase(),
+                            password: hash,
+                            name: record['name'],
+                            userType: 'applicant',
+                            verified: true
+                        });
+                        user.save()
+                        .then(async result=>{
+                            let fileName = randomName(10);
+                            await download(downloadUrl+record['resume'])
+                            .then(async downloadedFilePath=>{
+                                let type = downloadedFilePath.split('.')
+                                type = type[type.length-1];
+                                let newFileName = fileName + '.'+ type;
+                                let newFilePath = DOWNLOAD_DIR+ newFileName;
+                                await fs.rename(downloadedFilePath, newFilePath, ()=>{} );
+                                const profile = new Profile({
+                                    _id : new mongoose.Types.ObjectId(),
+                                    user_id: result._id,
+                                    type:result.userType,
+                                    updated: new Date(),
+                                    fullName: record['name'],
+                                    email: record['email'],
+                                    region: record['region'],
+                                    category: record['category'],
+                                    skills: record['skills'],
+                                    experience: record['experience'],
+                                    resume: 'uploads/'+newFileName, //upload file 
+                                    aboutMe: record['aboutMe'],
+                                    phoneNumber:  record['phoneNumber'],
+                                    salaryperyear: record['salaryperyear'],
+                                    salaryperhour: record['salaryperhour'],
+                                    updated: new Date(),
+                                });
+                                profile.save()
+                                .then(()=>{
+                                    console.log("Successfully created account and resume for ", record['email']);
+                                    success();
+                                })
+                            })
+                        })
+                    }
+                })
+            }).catch(err=>{
+                failed();
+            })
+
+        })
+    }
+    // records.forEach(async row=>{
+        
+    // })
+    res.send("Done");
+})
+
 module.exports.routes = router;
