@@ -37,7 +37,7 @@ router.get('/resumes',isRecruiter,(req,res)=>{
         res.send(data)
     })
     .catch(err=>{
-        console.log(err);
+        // console.log(err);
         res.status(500).send({
             message:"Server Error"
         })
@@ -73,7 +73,7 @@ function createNewOrganisation(email){
             domain:domain
         }).then(organisation=>{
             if(organisation){
-                console.log(domain,organisation);
+                // console.log(domain,organisation);
                 resolve();
             }else{
                 let newOrganisation = new Organisation({
@@ -104,7 +104,7 @@ function resetOrgResumes(req,res){
 router.get('/reset',resetOrgResumes);
 
 function getAllOrganisations(req,res){
-    console.log("In func")
+    // console.log("In func")
     Organisation.find({})
     .then(orgs=>{
         res.send({
@@ -117,8 +117,8 @@ router.get('/all',getAllOrganisations);
 
 function decrementResumeCountToDomain(email){
     let domain = util.getDomain(email || '').toLowerCase();
-    console.log("Called Decre org resumes");
-    console.trace();
+    // console.log("Called Decre org resumes");
+    // console.trace();
     return Organisation.findOne({
         domain:domain
     }).then(data=>{

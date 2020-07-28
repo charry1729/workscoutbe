@@ -13,7 +13,6 @@ const fs = require('fs')
 const { promisify } = require('util');
 const util = require('../../util');
 const organisationController = require('../routes/organisation');
-const { debug } = require("console");
 const mail = require('../../mail');
 const { send } = require("@sendgrid/mail");
 
@@ -44,7 +43,7 @@ const storage = multer.diskStorage({
     filename: function (req, file, cb) {
         let type = file.originalname.split('.');
         type ='.'+type[type.length-1];
-        cb(null, new Date().toISOString() + randomName(5)+type);
+        cb(null, new Date().toISOString() + randomName(15)+type);
     }
 });
 
@@ -77,7 +76,7 @@ const uploads = multer({
 
 router.get("/all",(req,res,next)=>{
     Job.find().populate('applicants').then((data)=>{
-        console.log(data);
+        // console.log(data);
         res.status(200).json({
             jobs: data,
         })
@@ -134,7 +133,7 @@ router.get("/testget", (req, res, next) => {
             }
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -328,6 +327,24 @@ router.post("/search/",isApplicant,(req,res,next)=>{
 
 
 router.post("/", isRecruiter, (req, res, next) => {
+    let emailRegexString = /\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+/g;
+    req.body.description = (req.body.description || '').replace(emailRegexString,' ').trim()
+    let data = req.body;
+    // Validations
+    let requiredFields = [
+        'email', 'experience','description',
+        'name','title','jobType','location',
+        'minimumsalary','maximumsalary','companyName'
+    ]
+    let isValid = true;
+    requiredFields.forEach(field=>{
+        if(!data[field]) isValid = false;
+    })
+    if(!(isValid) || !util.validateEmail(data.email)){
+        return res.status(403).send({
+            message : "Invalid data",
+        })
+    }
 
     const job = new Job({
         _id: new mongoose.Types.ObjectId(),
@@ -359,7 +376,7 @@ router.post("/", isRecruiter, (req, res, next) => {
     });
     job.save()
         .then(result => {
-            console.log(result);
+            // console.log(result);
             res.status(200).json({
                 message: "Created Job",
                 createdJob: {
@@ -394,7 +411,7 @@ router.post("/", isRecruiter, (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -438,7 +455,7 @@ router.post("/update",isRecruiter,(req,res,next)=>{
                 })
             }else{
 
-                console.log(doc);
+                // console.log(doc);
                 res.status(200).json({
                     message:"Update complete"
                 });
@@ -533,7 +550,7 @@ router.post("/apply", uploads.single('resume'), isApplicant, (req, res, next) =>
                 }
                 
             }).catch(err=>{
-                console.log(err);
+                // console.log(err);
                 res.status(500).json({
                     message:"error occured",
                 })
@@ -551,7 +568,7 @@ router.get("/:_id", async (req, res, next) => {
     Job.findById(req.params._id)
 
         .then(doc => {
-            console.log(doc);
+            // console.log(doc);
             if (doc) {
                 res.status(200).json({
                     job: doc,
@@ -568,7 +585,7 @@ router.get("/:_id", async (req, res, next) => {
             }
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -583,7 +600,7 @@ router.get("/location/:location", async (req, res, next) => {
         .populate("profile")
         .exec()
         .then(doc => {
-            console.log(doc);
+            // console.log(doc);
             if (doc) {
                 res.status(200).json({
                     job: doc
@@ -595,7 +612,7 @@ router.get("/location/:location", async (req, res, next) => {
             }
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -610,7 +627,7 @@ router.get("/createdBy/:createdBy", async (req, res, next) => {
         // .populate("profile")
         .exec()
         .then(doc => {
-            console.log(doc);
+            // console.log(doc);
             if (doc) {
                 res.status(200).json({
                     job: doc,
@@ -627,7 +644,7 @@ router.get("/createdBy/:createdBy", async (req, res, next) => {
             }
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -647,11 +664,11 @@ router.patch("/:jobId", (req, res, next) => {
         })
         .exec()
         .then(result => {
-            console.log(result);
+            // console.log(result);
             res.status(200).json(result);
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -679,11 +696,11 @@ router.delete("/:_id", checkAuth,(req, res, next) => {
                 })
                 .exec()
                 .then(result => {
-                    console.log(result);
+                    // console.log(result);
                     res.status(200).json(result);
                 })
                 .catch(err => {
-                    console.log(err);
+                    // console.log(err);
                     res.status(500).json({
                         error: err
                     });
@@ -737,7 +754,7 @@ function removeJobFromApplicationsAndProfiles(jobId){
 
 router.get('/:id/profiles',(req,res)=>{
     let jobid = req.params.id;
-    console.log(jobid);
+    // console.log(jobid);
     removeJobFromApplicationsAndProfiles(jobid)
     .then(data=>{
         res.send(data)
@@ -745,7 +762,7 @@ router.get('/:id/profiles',(req,res)=>{
 })
 
 router.post("/markFilled",isRecruiter,(req,res,next)=>{
-    console.log({createdBy:req.userData.userId,_id:req.body.jobID});
+    // console.log({createdBy:req.userData.userId,_id:req.body.jobID});
     Job.findOneAndUpdate({createdBy:req.userData.userId,_id:req.body.jobID},
     {
         $set:{
@@ -759,7 +776,7 @@ router.post("/markFilled",isRecruiter,(req,res,next)=>{
             })
             return
         }
-        console.log(doc);
+        // console.log(doc);
         if(!doc){
             res.status(404).json({
                 message:"Job not found",
@@ -792,7 +809,7 @@ router.post("/markFilled",isRecruiter,(req,res,next)=>{
 })
 
 router.post("/searchResult", async (req, res, next) => {
-    console.log(req.body.title, req.body.location);
+    // console.log(req.body.title, req.body.location);
 
     Job.find({
             $or: [{
@@ -806,7 +823,7 @@ router.post("/searchResult", async (req, res, next) => {
         .populate("job")
         .exec()
         .then(doc => {
-            console.log(doc);
+            // console.log(doc);
             if (doc) {
                 res.status(200).json({
                     job: doc
@@ -818,7 +835,7 @@ router.post("/searchResult", async (req, res, next) => {
             }
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -826,7 +843,7 @@ router.post("/searchResult", async (req, res, next) => {
 });
 
 router.get("/allapps",(res,req,next)=>{
-    console.log(JobApplication)
+    // console.log(JobApplication)
     JobApplication.find().then(doc=>{
         res.status(200).json({
             data: doc,
@@ -835,8 +852,8 @@ router.get("/allapps",(res,req,next)=>{
 });
 
 router.post("/application/purchase",isRecruiter,(req,res,next)=>{
-    console.log("In purchase");
-    console.log(req.body);
+    // console.log("In purchase");
+    // console.log(req.body);
     if(!req.body.applicationId){
         res.status(404).json({
             message:"No applicationId found"
@@ -851,7 +868,7 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
         }
         return doc;
     }).then(async application=>{
-        console.log(application)
+        // console.log(application)
         if(! application){
             res.status(404).json({
                 message:"Not found",
@@ -952,7 +969,7 @@ router.post("/application/purchase",isRecruiter,(req,res,next)=>{
 });
 
 router.get("/viewed/:id",(req,res,next)=>{
-    console.log(req.params);
+    // console.log(req.params);
     let jobID = req.params.id;
     if(!jobID){
         return res.status(500).send();
@@ -966,7 +983,7 @@ router.get("/viewed/:id",(req,res,next)=>{
                 views:1,
             }
         },function(err,doc){
-            console.log("Done",err,doc);
+            // console.log("Done",err,doc);
             if(err){
                 return res.status(500).json({});
             }
@@ -986,7 +1003,7 @@ router.post("/posted", isRecruiter,(req,res,next)=>{
         email: req.userData.email,
     }).then(user=>{
         if(user.userType == 'applicant'){
-            console.log("Not allowed to view")
+            // console.log("Not allowed to view")
             res.status(403).json({
                 message:"Not allowed to view resumes",
             })
@@ -1027,7 +1044,7 @@ router.post("/applicants", isRecruiter ,(req,res,next)=>{
     if(req.body.jobId){
         findFilter['_id'] = req.body.jobId;
     }
-    console.log(findFilter);
+    // console.log(findFilter);
     User.findById(req.userData.userId)
     .then(user=>{
         Job.find(findFilter)
@@ -1151,7 +1168,7 @@ router.post("/application/addNote",isRecruiter,(req,res,next)=>{
 
 
 router.post("/application/edit",isRecruiter,(req,res,next)=>{
-    console.log('In edit');
+    // console.log('In edit');
     const appId = req.body.applicationId;
     JobApplication.findOneAndUpdate(
         {
@@ -1185,7 +1202,7 @@ router.post('/appl',(req,res,next)=>{
 });
 
 router.post("/testing",isRecruiter,(req,res,next)=>{
-    console.log(req.userData);
+    // console.log(req.userData);
     res.status(200).json({
         message:"check",
     });

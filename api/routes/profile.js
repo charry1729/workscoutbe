@@ -6,8 +6,10 @@ const isRecruiter  = require("../middleware/isrecruiter")
 
 const Profile = require('../models/profile');
 const User = require('../models/users');
+const ResumePurchase = require('../models/resumePurchase')
 const organisationController = require('./organisation');
 const multer = require("multer");
+const util = require('../../util');
 
 const SERVER_IP = "34.224.1.240:3001";
 // const SERVER_IP = "http://3.229.152.95:3001";
@@ -30,7 +32,7 @@ const storage = multer.diskStorage({
     filename: function (req, file, cb) {
         let type = file.originalname.split('.');
         type ='.'+type[type.length-1];
-        cb(null, new Date().toISOString() + randomName(5)+type);
+        cb(null, new Date().toISOString() + randomName(15)+type);
     }
 });
 
@@ -41,7 +43,7 @@ const storage2 = multer.diskStorage({
     filename: function (req, file, cb) {
         let type = file.originalname.split('.');
         type ='.'+type[type.length-1];
-        cb(null, new Date().toISOString() + randomName(5)+type);
+        cb(null, new Date().toISOString() + randomName(15)+type);
     }
 });
 
@@ -139,12 +141,18 @@ router.post("/myprofile",uploads2.single('image'),(req,res,next)=>{
         })
 });
 
-router.post('/',uploads.single('resume'), (req, res, next) => {
-    const file = req.file
+router.post('/',checkAuth,uploads.single('resume'),(req, res, next) => {
+    //Validations 
+    let data = req.body;
+    if(!( data.email && data.fullName && data.region && data.skills && data.phoneNumber && data.aboutMe && data.category ) || !util.validateEmail(data.email)){
+        return res.status(403).send({
+            message:'Data sent is invalid',
+        })
+    }
+    const file = req.file;
     Profile.find({user_id : req.body.userid})
         .then(profile => {
             if(profile.length!=0) {
-
                 return Profile.findOneAndUpdate(
                     {
                         user_id: req.body.userid
@@ -154,29 +162,28 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                             fullName: req.body.fullName ? req.body.fullName : profile[0].fullName,
                             email: req.body.email ? req.body.email : profile[0].email,
                             region: req.body.region ? req.body.region : profile[0].region,
-                            professionalTitle: req.body.professionalTitle ? req.body.professionalTitle : profile[0].professionalTitle,
+                            professionalTitle: req.body.professionalTitle || '',
                             category: req.body.category ? req.body.category : profile[0].category,
                             skills: req.body.skills ? req.body.skills : profile[0].skills,
-                            url:  req.body.url ? req.body.url : profile[0].url,
+                            url:  req.body.url || '',
                             experience: req.body.experience ? req.body.experience : profile[0].experience,
                             resume: file ? file.path : profile[0].resume, //upload file 
                             aboutMe: req.body.aboutMe ? req.body.aboutMe : profile[0].aboutMe,
-                            education: req.body.education ? req.body.education : profile[0].education,
+                            education: req.body.education || '',
                             phoneNumber:  req.body.phoneNumber ? req.body.phoneNumber : profile[0].phoneNumber,
                             salaryperyear: req.body.salaryperyear ? req.body.salaryperyear : profile.salaryperyear,
                             salaryperhour: req.body.salaryperhour ? req.body.salaryperhour : profile.salaryperhour,
-
-                            companyName: req.body.companyName ? req.body.companyName : profile[0].companyName,
+                            videoUrl: req.body.videoUrl || '',
+                            companyName: req.body.companyName || '',
                             updated: new Date(),
                             }
                     },
                     function (err, doc) {
                         if (err) {
-                            console.log("update document error");
+                            // console.log("update document error");
                             return err;
                         } else {
-                            console.log("update document success");
-                            console.log(doc);
+                            // console.log("update document success");
                             return doc;
                         }
 
@@ -208,7 +215,6 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
             }
         })
         .then(result => {
-            console.log(result);
             res.status(201).json({
                 data: {
                     _id: result._id,
@@ -230,7 +236,6 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
                     companyName: result.companyName,
                     jobsApplied: result.jobsApplied,
                     updated: new Date(),
-
                 },
                 request: {
                     type: 'GET',
@@ -239,7 +244,6 @@ router.post('/',uploads.single('resume'), (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
             res.status(500).json({
                 error: err
             });
@@ -252,7 +256,7 @@ router.get("/:userid/profile",(req,res,next)=>{
     .populate('jobsApplied')
 
     .then((data)=>{
-        console.log(data);
+        // console.log(data);
         res.status(200).json({
             profile: data,
         })
@@ -262,7 +266,7 @@ router.get("/:userid/profile",(req,res,next)=>{
 
 
 router.get('/:userid', checkAuth,(req, res, next) => {
-    console.log(req.userData);
+    // console.log(req.userData);
  Profile.findOne({user_id:req.params.userid})
         .populate('jobsApplied','jobId')
         .then(async result=>{
@@ -318,8 +322,8 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
         })
     }
     else{
-        console.log(req.body);
-        let selectFilter = {'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0};
+        // console.log(req.body);
+        let selectFilter = {'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0, 'email':0,'phoneNumber':0};
         let skills = [RegExp(".*")];
         let skipR = 0;
         let sortFilter = {updated:-1}; // Newest by default
@@ -414,6 +418,11 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
             }]
         }
         User.findById(req.userData.userId).then(async user=>{
+            if(!user){
+                user={
+                    resumedownloadlimit : 0
+                }
+            }
             let orgResumes = await organisationController.getOrgResumes(req.userData.email);
             let totalResumes = user.resumedownloadlimit + orgResumes['resumeDownloadLimit']
             if(totalResumes<1){
@@ -464,70 +473,215 @@ router.post('/resumes',isRecruiter,(req, res, next)=>{
     }
 });
 
-router.post('/resume/:id',isRecruiter,(req,res,next)=>{
-    
+function createPurchaseHistory(recruiterId,resumeId){
+    let purhcase = new ResumePurchase({
+        resume:resumeId,
+        recruiterId: recruiterId,
+        purchasedOn : new Date()
+    })
+    purhcase.save(
+        function(err){
+            if(err){
+                // console.log("Purchase Failed",err);
+            }else{
+                // console.log("Purchase Successful");
+            }
+        }
+    )
+}
+
+router.get('/resume/:id',isRecruiter,(req,res)=>{
     if(!req.params.id){
         res.status(403).json({
             message: 'No resume id provided',
         })
     }
-    Profile.findById(req.params.id)
-    .then(resume=>{
-        User.findById(req.userData.userId)
-        .then(async (user)=>{
-            let orgResumes = await organisationController.getOrgResumes(req.userData.email);
-            let orgResumesCount = orgResumes['resumeDownloadLimit'] || 0;
-            if(orgResumesCount>0){
-             console.log(orgResumesCount);
-             organisationController.decrementResumeCountToDomain(req.userData.email)
-             .then(data=>{
-                 console.log('Downloaded from org resumes');
-                res.status(201).json({
-                    message:"Success",
-                    resume:resume.resume,
-                })
-             }).catch(err=>{
-                res.status(500).json({
-                    message:"Something went wrong",
-                })
-             })
-            }else{
-                if(user.resumedownloadlimit<=0){
-                    return res.status(403).json({
-                        message:"Purchase any plan to download resume",
-                    })
-                }
-                User.findOneAndUpdate(
-                {
-                    _id:req.userData.userId
-                },
-                {
-                    $inc:{
-                        resumedownloadlimit:-1,
-                    }
-                },
-                function(err,doc){
-                    if(err){
-                        res.status(500).json({
-                            message:"Something went wrong",
-                        })
-                    }
-                    if(doc){
-                        if(!doc){
-                            return res.send(400).send({
-                                message:"User not found",
+    let recruiterId = req.userData.userId;
+    let resumeId = req.params.id;
+    ResumePurchase.findOne({
+        resume: resumeId,
+        recruiterId: recruiterId
+    })
+    .populate('resume')
+    .then(purchase=>{
+        if(purchase){
+            return res.status(200).send({
+                message:'Success',
+                resume: purchase.resume.resume,
+                email : purchase.resume.email,
+            })
+        }else{
+            return res.status(404).send({
+                message:'Not yet purchased',
+            })
+        }
+    })
+    .catch(err=>{
+        return res.status(500).send({
+            message:'Internal error',
+        })
+    })
+
+})
+
+router.post('/resume/:id',isRecruiter,(req,res,next)=>{
+    if(!req.params.id){
+        res.status(403).json({
+            message: 'No resume id provided',
+        })
+    }
+    let recruiterId = req.userData.userId;
+    let resumeId = req.params.id;
+    // console.log(recruiterId,resumeId);
+    ResumePurchase.findOne({
+        resume: resumeId,
+        recruiterId: recruiterId
+    })
+    .populate('resume')
+    .then(purchase=>{
+        // // console.log("already purchased",purchase);
+        if(purchase){
+            return res.status(200).send({
+                message:'Success',
+                resume: purchase.resume.resume,
+                email : purchase.resume.email,
+            })
+        }else{
+            Profile.findById(resumeId)
+            .then(resume=>{
+                if(resume){
+                    let promises = [];
+                    promises[0] = User.findById(recruiterId);
+                    promises[1] = organisationController.getOrgResumes(req.userData.email);
+                    Promise.all(promises)
+                    .then(results=>{
+                        // console.log(results);
+                        let orgResumes = results[1];
+                        let orgResumesCount = orgResumes['resumeDownloadLimit'] || 0;
+                        let user = results[0];
+                        if(orgResumesCount>0){
+                            // console.log(orgResumesCount);
+                            organisationController.decrementResumeCountToDomain(req.userData.email)
+                            .then(data=>{
+                                createPurchaseHistory(recruiterId,resumeId);
+                               res.status(201).json({
+                                   message:"Success",
+                                   resume:resume.resume,
+                                   email:resume.email
+                               })
+                            }).catch(err=>{
+                               res.status(500).json({
+                                   message:"Something went wrong",
+                               })
+                            })
+                        }else{
+                            if(user.resumedownloadlimit<=0){
+                                return res.status(403).json({
+                                    message:"Purchase any plan to download resume",
+                                })
+                            }
+                            User.findOneAndUpdate(
+                            {
+                                _id:recruiterId
+                            },
+                            {
+                                $inc:{
+                                    resumedownloadlimit:-1,
+                                }
+                            },
+                            function(err,doc){
+                                if(err){
+                                    res.status(500).json({
+                                        message:"Something went wrong",
+                                    })
+                                }
+                                if(doc){
+                                    
+                                    if(!doc){
+                                        return res.send(400).send({
+                                            message:"User not found",
+                                        })
+                                    }
+                                    createPurchaseHistory(recruiterId,resumeId);
+                                    res.status(201).json({
+                                        message:"Success",
+                                        resume:resume.resume,
+                                        email:resume.email
+                                    })
+                                }
                             })
                         }
-                        res.status(201).json({
-                            message:"Success",
-                            resume:resume.resume,
-                        })
-                    }
+                    })
+                }else{
+                    return res.status(404).send({
+                        message:"Invalid Profile Id",
+                    })
+                }
+            })
+            .catch(err=>{
+                res.status(500).send({
+                    message:"Internal Error"
                 })
-            }
-        })
-        
+            })
+        }
     })
+    // Profile.findById(req.params.id)
+    // .then(resume=>{
+    //     User.findById(req.userData.userId)
+    //     .then(async (user)=>{
+    //         let orgResumes = await organisationController.getOrgResumes(req.userData.email);
+    //         let orgResumesCount = orgResumes['resumeDownloadLimit'] || 0;
+    //         if(orgResumesCount>0){
+    //          // console.log(orgResumesCount);
+    //          organisationController.decrementResumeCountToDomain(req.userData.email)
+    //          .then(data=>{
+    //              // console.log('Downloaded from org resumes');
+    //             res.status(201).json({
+    //                 message:"Success",
+    //                 resume:resume.resume,
+    //             })
+    //          }).catch(err=>{
+    //             res.status(500).json({
+    //                 message:"Something went wrong",
+    //             })
+    //          })
+    //         }else{
+    //             if(user.resumedownloadlimit<=0){
+    //                 return res.status(403).json({
+    //                     message:"Purchase any plan to download resume",
+    //                 })
+    //             }
+    //             User.findOneAndUpdate(
+    //             {
+    //                 _id:req.userData.userId
+    //             },
+    //             {
+    //                 $inc:{
+    //                     resumedownloadlimit:-1,
+    //                 }
+    //             },
+    //             function(err,doc){
+    //                 if(err){
+    //                     res.status(500).json({
+    //                         message:"Something went wrong",
+    //                     })
+    //                 }
+    //                 if(doc){
+    //                     if(!doc){
+    //                         return res.send(400).send({
+    //                             message:"User not found",
+    //                         })
+    //                     }
+    //                     res.status(201).json({
+    //                         message:"Success",
+    //                         resume:resume.resume,
+    //                     })
+    //                 }
+    //             })
+    //         }
+    //     })
+        
+    // })
 });
 
 router.get('/all/all',(req,res)=>{
@@ -556,7 +710,7 @@ router.get('/set/data',(req,res)=>{
 });
 
 router.post("/resumesNew",(req,res,next)=>{
-    console.log(req.body);
+    // console.log(req.body);
     let selectFilter={'__v':0,'jobsApplied':0 , 'user_id':0 , 'resume':0};
     if(!req.body.resumedownloadlimit){
         selectFilter={'salaryperyear':1,'salaryperhour':1,'fullName':1,'skills':1,'region':1,'updated':1,'professionalTitle':1}
@@ -607,7 +761,7 @@ router.post("/resumesNew",(req,res,next)=>{
             })  
         })
         .catch(err=>{
-            console.log(err);
+            // console.log(err);
             res.status(200).json({
                 message:"error while retrieving resumes",
             })  
@@ -617,7 +771,7 @@ router.post("/resumesNew",(req,res,next)=>{
 
 
 router.patch('/:_id', (req, res, next) => {
-    console.log(req.body);
+    // console.log(req.body);
 
     const ID = req.params._id;
     const updateOps = {};
@@ -631,11 +785,11 @@ router.patch('/:_id', (req, res, next) => {
         })
         .exec()
         .then(result => {
-            console.log(result);
+            // console.log(result);
             res.status(200).json(result);
         })
         .catch(err => {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({
                 error: err
             });

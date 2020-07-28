@@ -31,34 +31,33 @@ app.set('view engine', 'html');
 app.set('views', __dirname);
 
 app.get('/', function(req,res) {    
-    var ord = JSON.stringify(Math.random()*1000);
-    var i = ord.indexOf('.');
-    ord = 'ORD'+ ord.substr(0,i);   
-    res.render(__dirname + '/checkout.html', {orderid:ord});
-    
+    res.send({
+        message:'Welcome'
+    })
 });
     
 
 app.post('/', function(req, res){
-    var strdat = '';
+    res.send({
+        message:'Welcome'
+    })
+    // var strdat = '';
     
-    req.on('data', function (chunk) {
-        strdat += chunk;
-    });
+    // req.on('data', function (chunk) {
+    //     strdat += chunk;
+    // });
     
-    req.on('end', function()
-    {
-        var data = JSON.parse(strdat);
-        var cryp = crypto.createHash('sha512');
-        var text = data.key+'|'+data.txnid+'|'+data.amount+'|'+data.pinfo+'|'+data.fname+'|'+data.email+'|||||'+data.udf5+'||||||'+data.salt;
-        cryp.update(text);
-        var hash = cryp.digest('hex');      
-        res.setHeader("Content-Type", "text/json");
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.end(JSON.stringify(hash));      
-    });
-    
-    
+    // req.on('end', function()
+    // {
+    //     var data = JSON.parse(strdat);
+    //     var cryp = crypto.createHash('sha512');
+    //     var text = data.key+'|'+data.txnid+'|'+data.amount+'|'+data.pinfo+'|'+data.fname+'|'+data.email+'|||||'+data.udf5+'||||||'+data.salt;
+    //     cryp.update(text);
+    //     var hash = cryp.digest('hex');      
+    //     res.setHeader("Content-Type", "text/json");
+    //     res.setHeader("Access-Control-Allow-Origin", "*");
+    //     res.end(JSON.stringify(hash));      
+    // });
 });
 app.use(bodyParser.urlencoded({
     extended: true

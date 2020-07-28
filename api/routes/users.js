@@ -51,7 +51,7 @@ const storage = multer.diskStorage({
     filename: function (req, file, cb) {
         let type = file.originalname.split('.');
         type ='.'+type[type.length-1];
-        cb(null, new Date().toISOString() + randomName(10)+type);
+        cb(null, new Date().toISOString() + randomName(15)+type);
     }
 });
 
@@ -700,7 +700,7 @@ router.post('/import/records', uploads.single('file') ,async (req,res)=>{
                         });
                         user.save()
                         .then(async result=>{
-                            let fileName = randomName(10);
+                            let fileName = randomName(15);
                             await download(downloadUrl+record['resume'])
                             .then(async downloadedFilePath=>{
                                 let type = downloadedFilePath.split('.')

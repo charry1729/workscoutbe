@@ -13,7 +13,7 @@ const User = require('../models/users');
 const Profile = require("../models/profile")
 const PAY_SECRET = process.env.PAY_SECRET;
 const PAY_PUB_KEY = process.env.PAY_PUB_KEY;
-console.log(PAY_SECRET);
+// console.log(PAY_SECRET);
 const stripe = require('stripe')(PAY_SECRET);
 
 const currency = 'usd'; 
@@ -71,7 +71,7 @@ router.post('/create-payment-intent',isRecruiter ,async (req,res)=>{
     }
     let plan = plans[req.body.plan]
     const intent = await createPaymentIntent(plan.amount,req.userData.name || 'AnonymousUser');
-    console.log("intent",intent)
+    // console.log("intent",intent)
     res.json({
         publishableKey: PAY_PUB_KEY,
         clientSecret:intent.client_secret,
@@ -143,7 +143,7 @@ router.post('/payment/status/:intentId',isRecruiter,async (req,res)=>{
                                 })
                                 paymentObj.save()
                                 .then(result=>{
-                                    console.log("Created Payment",result);
+                                    // console.log("Created Payment",result);
                                     res.status(200).send({
                                         message:'Successfully added'
                                     })
