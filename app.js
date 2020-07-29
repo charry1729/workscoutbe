@@ -9,6 +9,7 @@ var crypto = require('crypto');
 const profileRoutes = require('./api/routes/profile');
 const jobRoutes = require('./api/routes/jobs');
 const userRoutes = require('./api/routes/users');
+const process = require('process');
 const User = require('./api/models/users');
 const paymentRoutes = require('./api/routes/payment')
 const organisationRoutes = require('./api/routes/organisation');
@@ -17,10 +18,14 @@ app.use(cors()); // Using Cors policy for CROSS ORIGIN CALLS
 app.options('*', cors())
 app.use(compression()); // Compressing responses to reduce data transfer to clients
 
+let mongoOptions={
+    autoIndex: false, // Don't build indexes
+    poolSize: 10, // Maintain up to 10 socket connections
+}
 
-// mongoose.connect('mongodb://localhost:27017/testdb');
-mongoose.connect('mongodb://localhost:27017/stag?authSource=admin');
+console.log("DB_URL",process.env.DB_URL);
 
+mongoose.connect(process.env.DB_URL,mongoOptions);
 
 app.use(morgan('dev'));
 
@@ -41,23 +46,6 @@ app.post('/', function(req, res){
     res.send({
         message:'Welcome'
     })
-    // var strdat = '';
-    
-    // req.on('data', function (chunk) {
-    //     strdat += chunk;
-    // });
-    
-    // req.on('end', function()
-    // {
-    //     var data = JSON.parse(strdat);
-    //     var cryp = crypto.createHash('sha512');
-    //     var text = data.key+'|'+data.txnid+'|'+data.amount+'|'+data.pinfo+'|'+data.fname+'|'+data.email+'|||||'+data.udf5+'||||||'+data.salt;
-    //     cryp.update(text);
-    //     var hash = cryp.digest('hex');      
-    //     res.setHeader("Content-Type", "text/json");
-    //     res.setHeader("Access-Control-Allow-Origin", "*");
-    //     res.end(JSON.stringify(hash));      
-    // });
 });
 app.use(bodyParser.urlencoded({
     extended: true
@@ -116,7 +104,7 @@ const limit = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 Hour of 'ban' / lockout 
     message: 'Too many requests' // message to send
 });
-app.use('/routeName', limit); // Setting limiter on specific route
+app.use('/user/login', limit); // Setting limiter on specific route
 // Body Parser
 app.use(express.json({
     limit: '30kb'

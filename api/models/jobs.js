@@ -2,8 +2,6 @@ var mongoose = require('mongoose');
 //var Schema = mongoose.Schema;
 const jobSchema = mongoose.Schema({
 
-    //var jobSchema = new Schema({
-
     jobId: {
         type: String,
         index:true

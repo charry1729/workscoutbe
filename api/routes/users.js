@@ -18,21 +18,14 @@ const url = require('url');
 const DOWNLOAD_DIR = './uploads/';
 const fs = require('fs');
 const { fail } = require("assert");
+const process = require('process');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const tempID = process.env.TEMPLATE_ID;
 const FTID = process.env.FORGET_PASSWORD_TEMPLATE; //Forgot password email template
 
-let i=1;
-// var j = schedule.scheduleJob("test",'* * * * *', function(){
-//     console.log('The answer to life, the universe, and everything! '+i);
-//     i++;
-//   });
 
-const SERVER_IP_WO_PORT = "34.224.1.240";
-// const SERVER_IP_WO_PORT = "3.229.152.95"
-// const SERVER_IP_WO_PORT = "localhost";
-
+const SERVER_IP_WO_PORT = process.env.SERVER_IP_WO_PORT;
 
 const randomName = function(length){
     var result           = '';

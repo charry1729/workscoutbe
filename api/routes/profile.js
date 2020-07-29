@@ -3,7 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const checkAuth = require('../middleware/check-auth');
 const isRecruiter  = require("../middleware/isrecruiter")
-
+const process = require('process');
 const Profile = require('../models/profile');
 const User = require('../models/users');
 const ResumePurchase = require('../models/resumePurchase')
@@ -11,9 +11,7 @@ const organisationController = require('./organisation');
 const multer = require("multer");
 const util = require('../../util');
 
-const SERVER_IP = "34.224.1.240:3001";
-// const SERVER_IP = "http://3.229.152.95:3001";
-// const SERVER_IP = "localhost:3001";
+const SERVER_IP = process.env.SERVER_IP;
 
 const randomName = function(length){
     var result           = '';

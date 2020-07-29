@@ -15,13 +15,11 @@ const util = require('../../util');
 const organisationController = require('../routes/organisation');
 const mail = require('../../mail');
 const { send } = require("@sendgrid/mail");
+const process = require('process');
 
-const unlinkAsync = promisify(fs.unlink)
+const unlinkAsync = promisify(fs.unlink);
 
-
-const SERVER_IP = "34.224.1.240:3001";
-// const SERVER_IP = "3.229.152.95:3001";
-// const SERVER_IP = "localhost:3001";
+const SERVER_IP = process.env.SERVER_IP;
 
 const APPLICANT_LIMIT = 10;
 const JOB_LIMIT = 25;
