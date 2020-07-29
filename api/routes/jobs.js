@@ -161,34 +161,36 @@ router.get("/",(req,res,next)=>{
     .skip( skipNum  )
     .limit(25)
     .then(jobs=>{
-
-        Job.aggregate([
-            {
-                $match: {
-                    filled:false,
-                }
-            },
-            {
-                $group: {
-                    _id:"$jobType",
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $project: {
-                  _id: 0,
-                  jobType: "$_id",
-                  count: 1,
-                }
-            }
-        ])
-        // Job.distin
-        .then(result=>{
-            res.status(200).json({
-                counts:result,
-                jobs
-            })
+        res.status(200).json({
+            jobs
         })
+        // Job.aggregate([
+        //     {
+        //         $match: {
+        //             filled:false,
+        //         }
+        //     },
+        //     {
+        //         $group: {
+        //             _id:"$jobType",
+        //             count: { $sum: 1 }
+        //         }
+        //     },
+        //     {
+        //         $project: {
+        //           _id: 0,
+        //           jobType: "$_id",
+        //           count: 1,
+        //         }
+        //     }
+        // ])
+        // // Job.distin
+        // .then(result=>{
+        //     res.status(200).json({
+        //         counts:result,
+        //         jobs
+        //     })
+        // })
         
 
     })
