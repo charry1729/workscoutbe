@@ -1044,7 +1044,6 @@ router.post("/applicants", isRecruiter ,(req,res,next)=>{
     if(req.body.jobId){
         findFilter['_id'] = req.body.jobId;
     }
-    // console.log(findFilter);
     User.findById(req.userData.userId)
     .then(user=>{
         Job.find(findFilter)
@@ -1092,7 +1091,11 @@ router.post("/applicants", isRecruiter ,(req,res,next)=>{
             .limit(APPLICANT_LIMIT)
             .skip(skipE)
             .then(applicants=>{
-
+                applicants.forEach(applicant=>{
+                    if(!applicant.purchased){
+                        applicant.applicantEmail = '';
+                    }
+                })
                 res.json({
                     resumeLimit:user.resumedownloadlimit,
                     applications:applicants

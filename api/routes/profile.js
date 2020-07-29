@@ -480,9 +480,9 @@ function createPurchaseHistory(recruiterId,resumeId){
     purhcase.save(
         function(err){
             if(err){
-                // console.log("Purchase Failed",err);
+                console.log("Purchase Failed",err);
             }else{
-                // console.log("Purchase Successful");
+                console.log("Purchase Successful");
             }
         }
     )
